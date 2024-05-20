@@ -1,31 +1,7 @@
 
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from util.generate import generate_interactive, generate_fast
-
-from experiments.py.demo import demo_model_editing, stop_execution, LAYER_IDX
-from paraphrase_dictionary import d as paraphrase_dict
-from generation_dictionary import d as generation_dict
-
+from experiments.py.demo import demo_model_editing, LAYER_IDX
 import os, re, json
 import torch, numpy
-from collections import defaultdict
-from util import nethook
-from util.globals import DATA_DIR
-from experiments.causal_trace import (
-    ModelAndTokenizer,
-    layername,
-    guess_subject,
-    plot_trace_heatmap,
-)
-from experiments.causal_trace import (
-    make_inputs,
-    decode_tokens,
-    find_token_range,
-    # predict_token,
-    predict_from_input,
-    collect_embedding_std,
-)
-from dsets import KnownsDataset
 
 from helper_functions import *
 from experiment_config import *
@@ -40,62 +16,6 @@ torch.manual_seed(_seed)
 
 import copy
 
-def plot_hidden_flow(
-    mt,
-    prompt,
-    subject=None,
-    samples=10,
-    noise=0.1,
-    window=10,
-    kind=None,
-    modelname=None,
-    savepdf=None,
-):
-    if subject is None:
-        subject = guess_subject(prompt)
-    result = calculate_hidden_flow(
-        mt, prompt, subject, samples=samples, noise=noise, window=window, kind=kind
-    )
-    print("result:\n",result)
-    plot_trace_heatmap(result, savepdf, modelname=modelname)
-
-
-def plot_all_flow(mt, prompt, subject=None, noise=0.1, modelname=None):
-    for kind in ["mlp"]:
-        plot_hidden_flow(
-            mt, prompt, subject, modelname=modelname, noise=noise, kind=kind
-        )
-
-
-def neighbors_probs(mt, main_subject, relation, neighbors, target_id):
-  # str, list(str), int --> list(float)
-  probs = []
-  for neighbor in neighbors:
-    if main_subject is None or neighbor!=main_subject:
-      prompt = combine_prompt(neighbor, relation)
-      probs.append(predict_by_idx(mt, prompt, target_id))
-  return probs
-
-def neighbors_true_probs(mt, main_subject, relation, neighbors, target_ids):
-  # str, list(str), int --> list(float)
-  probs = []
-  for i in range(len(neighbors)):
-    neighbor = neighbors[i]
-    if main_subject is None or neighbor!=main_subject:
-      prompt = combine_prompt(neighbor, relation)
-      probs.append(predict_by_idx(mt, prompt, target_ids[i]))
-  return probs
-
-def neighbors_probs_from_orig(mt, main_subject, relation, neighbors, targets_id):
-  # str, list(str), int --> list(float)
-  probs = []
-  for i in range(len(neighbors)):
-    neighbor=neighbors[i]
-    if main_subject is None or neighbor!=main_subject:
-      prompt = combine_prompt(neighbor, relation)
-      probs.append(predict_by_idx(mt, prompt, targets_id[i]))
-  return probs
-
 def neighboring(probs1, probs2):
   # list(float), list(float) --> float
   # tensor(float), tensor(float), --> float
@@ -106,48 +26,6 @@ def neighboring(probs1, probs2):
   ngbring_vector = 1 - numerator / denominator
   ngbring = ngbring_vector.sum() / m
   return ngbring.item()
-
-  # f = []
-  # for i in range(m):
-  #   numerator = abs(probs1[i]-probs2[i])
-  #   denominator = 0.5+abs(probs1[i]-0.5)
-  #   ngbring = 1 - numerator / denominator
-  #   f.append(ngbring)
-  # return sum(f) / m
-
-def plot_all_flow(mt, prompt, subject=None, noise=0.1, modelname=None):
-    for kind in ["mlp"]:
-        plot_hidden_flow(
-            mt, prompt, subject, modelname=modelname, noise=noise, kind=kind
-        )
-
-
-FILE_NAME_SANITY = "another_test"
-def change_and_check_sanity(subject, relation, new_target, layer_idx):
-  clean(mt)
-  LAYER_IDX[0] = layer_idx
-
-  random.seed(_seed)
-  numpy.random.seed(seed=_seed)
-  torch.manual_seed(_seed)
-  
-  pre_output = naiv_predict(subject, relation)
-
-  request = [
-      {
-          "prompt": relation,
-          "subject": subject,
-          "target_new": {"str": new_target},
-      }
-  ]
-
-  M["model_new"], M["orig_weights"] = demo_model_editing(mt.model, tok, request, ["a"], alg_name="ROME")
-  mt.model = M["model_new"]
-
-  post_output = naiv_predict(subject, relation)
-  file = open(FILE_NAME_SANITY, "a", encoding="utf-8")
-  file.write(f"relation = {relation}, \tsubject = {subject}, \tnew target = {new_target}, \tlayer = {layer_idx}, \toriginal output = {pre_output}, \tnew output = {post_output}, \tsuccess = {post_output.replace(' ', '') == new_target.replace(' ', '')}\n")
-  file.close()
 
     
 def change_and_check(main_subject_idx, relation, target_for_new, neighborhood, orig_probs_to_new, orig_and_prob, to_target_flag, preplus, pre_change_target=None):
@@ -178,7 +56,6 @@ def change_and_check(main_subject_idx, relation, target_for_new, neighborhood, o
     print("\n\n%%%%%%%%\n$$$$$$$$\n")
     return [-1] * 11
     
-
 # pre edit
   if pre_change_target is not None:
     pre_change_target = orig_and_prob["orig_final"][main_subject_idx] if pre_change_target=="self" else pre_change_target 
@@ -260,7 +137,8 @@ def change_and_check(main_subject_idx, relation, target_for_new, neighborhood, o
   
   post_finalplus_score = 1-(preplus["finals score"]-torch.tensor(post_finalsplus)).sum() / preplus["finals score"].sum()
   post_finalplus_score = post_finalplus_score.item()
-  results.append(post_finalplus_score)
+  # results.append(post_finalplus_score)
+  results.append(0)   # This index creates problems because of division by 0
 
   post_probstrue_score = neighboring(preplus["prob score"], torch.tensor(post_probstrue))
   results.append(post_probstrue_score)
@@ -277,40 +155,6 @@ def change_and_check(main_subject_idx, relation, target_for_new, neighborhood, o
   results.append(efficacy_final)
   efficacy_prob = (post_prob_to_new[0] - orig_p_to_new) / (1 - orig_p_to_new)
   results.append(efficacy_prob)
-
-#   # check paraphrase
-#   if prompt in paraphrase_dict.keys() and target_for_new!="self":
-#     paraphrase_score_final = 0
-#     paraphrase_score_prob = 0
-#     for paraphrase in paraphrase_dict[prompt]:
-#       post_final_par, post_prob_to_new_par = predict_by_idx_and_max(mt, paraphrase, [tok_id])
-#       pre_prob_to_new_par = paraphrase_and_generation_dict["paraphrase"][paraphrase]["new_objects_p"][tok_id]
-#       final_score_par = int(post_final_par==new_target)
-#       prob_score_par = (post_prob_to_new_par[0] - pre_prob_to_new_par) / (1 - pre_prob_to_new_par)
-#       paraphrase_score_final += final_score_par
-#       paraphrase_score_prob += prob_score_par
-#     results.append(paraphrase_score_final / len(paraphrase_dict[prompt]))
-#     results.append(paraphrase_score_prob / len(paraphrase_dict[prompt]))
-#   else:
-#     results.append(EMPTY())
-#     results.append(EMPTY())
-  
-#   # check generation
-#   if prompt in generation_dict.keys() and target_for_new!="self":
-#     generation_score_final = 0
-#     generation_score_prob = 0
-#     for generation in generation_dict[prompt]:
-#       post_final_gen, post_prob_to_new_gen = predict_by_idx_and_max(mt, generation, [tok_id])
-#       pre_prob_to_new_gen = paraphrase_and_generation_dict["generation"][generation]["new_objects_p"][tok_id]
-#       final_score_gen = int(post_final_gen==new_target)
-#       prob_score_gen = (post_prob_to_new_gen[0] - pre_prob_to_new_gen) / (1 - pre_prob_to_new_gen)
-#       generation_score_final += final_score_gen
-#       generation_score_prob += prob_score_gen
-#     results.append(generation_score_final / len(generation_dict[prompt]))
-#     results.append(generation_score_prob / len(generation_dict[prompt]))
-#   else:
-#     results.append(EMPTY())
-#     results.append(EMPTY())
 
   # [single float, ... , single float]   --> len = 7 
   return results
