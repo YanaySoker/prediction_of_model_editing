@@ -1,7 +1,7 @@
 from general_functions import *
 from helper_functions import *
-from corrected_neighborhood import d
-from config import *
+from neighborhood import d
+from experiment_config import *
 import sys
 
 start_line, end_line = int(sys.argv[1]), int(sys.argv[2])
