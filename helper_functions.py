@@ -1,23 +1,9 @@
-import torch
 from util import nethook
 import gc
-import math
-
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from util.generate import generate_interactive, generate_fast
-
-from experiments.py.demo import demo_model_editing, stop_execution
-
-import os, re, json
 import torch, numpy
-from collections import defaultdict
-from util import nethook
-from util.globals import DATA_DIR
+from experiments.causal_trace import predict_from_input
+from experiment_config import *
 
-from experiments.causal_trace import predict_from_input,
-
-from dsets import KnownsDataset
-from config import *
 
 def combine_prompt(subject, relation):
   if relation is not None:
