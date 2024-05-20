@@ -28,7 +28,7 @@ from experiments.causal_trace import (
 from dsets import KnownsDataset
 
 from helper_functions import *
-from config import *
+from experiment_config import *
 
 torch.set_grad_enabled(True)
 
