@@ -94,5 +94,5 @@ for neighborhood in d[start_line:end_line]:
   
   print("DONE relation:", relation)
 
-    
-print_dict(res_dict, f"{TO_OUTPUT}_dict_{start_line}_{end_line}.py")
+dict_name = "probs_in_last_layer" if TO_OUTPUT=="final_probs" else "labels_dict"
+print_dict(res_dict, f"{TO_OUTPUT}_{start_line}_{end_line}.py")
