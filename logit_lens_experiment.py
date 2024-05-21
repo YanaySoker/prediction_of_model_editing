@@ -12,6 +12,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name).to("cuda")
 
 K = 5
+TO_OUTPUT = "labels"   # "labels", "final_probs"
 
 
 def combine_prompt(subject, relation):
@@ -71,18 +72,27 @@ for neighborhood in d[start_line:end_line]:
     encoded_input = tokenizer(text, return_tensors='pt').to('cuda')
     output = model(**encoded_input, return_dict=True, output_hidden_states = True)
 
+#     hidden_states_mlp = output.hidden_states
     hidden_states = output.hidden_states
-    labels_list = []
     print("subject:", subject)
     
-    for l in range(len(hidden_states)):
-      logits = model.lm_head(hidden_states[l])
+    if TO_OUTPUT=="labels":
+      res_s_list = []
+      for l in range(len(hidden_states)):
+        logits = model.lm_head(hidden_states[l])
+        probs = torch.softmax(logits[:, -1], dim=1)
+        labels = k_most_likely_one_layer(probs[0], K)
+        res_s_list.append(labels)    
+ 
+    if TO_OUTPUT=="final_probs":
+      logits = model.lm_head(hidden_states[-1])
       probs = torch.softmax(logits[:, -1], dim=1)
-      labels = k_most_likely_one_layer(probs[0], K)
-      labels_list.append(labels)    
+      labels, max_probs = k_most_likely_one_layer(probs[0], K, return_probs=True)
+      res_s_list = (labels, max_probs)
 
-    res_dict[relation][subject] = labels_list
+    res_dict[relation][subject] = res_s_list
   
   print("DONE relation:", relation)
 
-print_dict(res_dict, f"labels_dict_{start_line}_{end_line}.py")
+    
+print_dict(res_dict, f"{TO_OUTPUT}_dict_{start_line}_{end_line}.py")
