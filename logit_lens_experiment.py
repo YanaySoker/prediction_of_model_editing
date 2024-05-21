@@ -1,7 +1,7 @@
 from transformers import GPT2Tokenizer, GPT2Model, TFGPT2LMHeadModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
-from corrected_neighborhood import d
+from neighborhood import d
 import sys
 
 # tokenizer = GPT2Tokenizer.from_pretrained('EleutherAI/gpt-j-6B')
