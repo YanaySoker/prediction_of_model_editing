@@ -1,6 +1,6 @@
 # prediction_of_model_editing
 
-This repository documents the code that was used to test the relationship between the optimal location for editing a language model and the probability that the model gives to the output in the different layers.
+This repository documents the code that was used to test the relationship between the optimal location for editing a language model (gpt2-xl) and the probability that the model gives to the output in the different layers.
 
 # Files 
 
@@ -14,12 +14,14 @@ The file analysis_statistic.py is used for general statistical analyzes on Optim
 
 # The output structure
 
-The scores file contains a list d of dictionaries (each dictionary belongs to a single relation, but there are relations with 2 dictionaries). the structure of each dictionary is:
+The scores file contains a list d of dictionaries (There is one dictionary in this file for every dictionary in the neighborhood.py file, in order. Each dictionary belongs to a single relation, but there are relations with 2 dictionaries). the structure of each dictionary is:
 {'causal_features': dict, 'neighborhood_scores': list, 'efficacy_scores': list, 'paraphrase_scores': list}.
 
-The causal_features dict contains features of the causal trace pattern of each prompt. This dictionary, as well as the paraphrase_scores list, are not used in this study.
+The causal_features dict contains features of the causal trace pattern of each prompt. This dictionary, and the paraphrase_scores list, are not used in this study.
 
+The neighborhood_scores list contains 48 lists - one list for each layer in the model.
 
+Each layer-list contains 5 lists - one list for each type of specificity: final (percentage of final outputs that did not change); probs (the complement of the change in the probability of the correct output, normalized); 
 
 
 
