@@ -14,6 +14,9 @@ The file analysis_statistic.py is used for general statistical analyzes on Optim
 
 # The output structure
 
+The scores file contains a dictionary d:
+
+d = {}
 
 
 
