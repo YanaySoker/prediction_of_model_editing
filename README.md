@@ -4,7 +4,7 @@ This repository documents the code that was used to test the relationship betwee
 
 # Files 
 
-The file editing_experiment.py performs the edits on all the prompts in the dataset and calculates the success (efficacy, specificity, specificity_plus) of each prompt, averaged over a group of new objects. This file can be run by running run_editing_experiment.bash, with the parameters: from_layer, to_layer. Its output is a scores_<from_layer_to_layer>.py file.
+The file editing_experiment.py performs the edits on all the prompts in the dataset and calculates the success (efficacy, specificity, specificity_plus) of each prompt, averaged over a group of new objects. This file can be run by running run_editing_experiment.bash, with the parameters: from_layer, to_layer. Its output is a scores_<from_layer>_<to_layer>.py file.
 
 The file logit_lens_experiment.py calculates the k labels with the highest probability for each prompt in each layer (if TO_OUTPUT = "labels") or the probabilities that the model assigns to the k labels with the highest probability in the last layer for each prompt (if TO_OUTPUT = " final_probs"). The file can be run by running run_logit_lens.bash, with the parameters: from_layer, to_layer.
 
