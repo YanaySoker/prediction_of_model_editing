@@ -14,9 +14,14 @@ The file analysis_statistic.py is used for general statistical analyzes on Optim
 
 # The output structure
 
-The scores file contains a dictionary d:
+The scores file contains a list d of dictionaries (each dictionary belongs to a single relation, but there are relations with 2 dictionaries). the structure of each dictionary is:
+{'causal_features': dict, 'neighborhood_scores': list, 'efficacy_scores': list, 'paraphrase_scores': list}.
 
-d = {}
+The causal_features dict contains features of the causal trace pattern of each prompt. This dictionary, as well as the paraphrase_scores list, are not used in this study.
+
+
+
+
 
 
 
