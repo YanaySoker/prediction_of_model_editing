@@ -12,7 +12,7 @@ Inside the analysis folder are the files used to analyze the results.
 
 The file analysis_statistic.py is used for general statistical analyzes on Optimal Layer to Update (OLU), and the file analysis_logit_lens.py is used to analyze the relationship between the success of editing in the different layers and the results of logit lens. In both of these files, the signatures of the independent functions appear at the end of the file.
 
-The folders baselines and experiments contain the files of the ROME algorithm.
+The folder rome_files contains the files of the ROME algorithm (with small changes for this project).
 
 # The output structure
 
