@@ -1,5 +1,5 @@
 
-from experiments.py.demo import demo_model_editing, LAYER_IDX
+from rome_files.experiments.py.demo import demo_model_editing, LAYER_IDX
 import os, re, json
 import torch, numpy
 
@@ -369,6 +369,7 @@ def all_results(neighborhood_list, to_target_flag=False, num_of_layers=NUM_OF_LA
         _layers_list = HIGH_RES_LAYERS_RANGE
     else:
         _layers_list = LAYERS_RANGE
+    _layers_list = [5]  # לשנות בחזרה!
     new_results = neighborhood_results(neighborhood_data, to_target_flag, num_of_layers, experiment_type, layers_list=_layers_list)
     results.append(new_results)
   return results
