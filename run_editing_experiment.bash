@@ -10,4 +10,4 @@ nvidia-smi
 CONDA_HOME=$home/miniconda3
 CONDA_ENV=prediction_editing_env
 CUDA_LAUNCH_BLOCKING=1 
-python /home/prediction_of_model_editing/editing_experiment.py  "$1" "$2" "$3"
+python /home/prediction_of_model_editing/editing_experiment.py  "$1" "$2"
