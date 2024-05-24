@@ -1,8 +1,16 @@
-from util import nethook
+from rome_files.util import nethook
 import gc
 import torch, numpy
-from experiments.causal_trace import predict_from_input
+from rome_files.experiments.causal_trace import predict_from_input
 from experiment_config import *
+
+from rome_files.experiments.causal_trace import (
+    make_inputs,
+    decode_tokens,
+    find_token_range,
+    predict_from_input,
+    collect_embedding_std,
+)
 
 
 def combine_prompt(subject, relation):
