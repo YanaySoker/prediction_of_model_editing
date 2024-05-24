@@ -1,9 +1,9 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
-from experiments.causal_trace import ModelAndTokenizer
-from dsets import KnownsDataset
-from experiments.causal_trace import collect_embedding_std
-from util.globals import DATA_DIR
+from rome_files.experiments.causal_trace import ModelAndTokenizer
+from rome_files.dsets import KnownsDataset
+from rome_files.experiments.causal_trace import collect_embedding_std
+from rome_files.util.globals import DATA_DIR
 
 # model_name = "EleutherAI/gpt-j-6B" 
 # model_name = "gpt-j-6B"
@@ -29,7 +29,6 @@ mt.tokenizer = tok
 tok.pad_token = tok.eos_token
 
 M = dict()
-
 
 if model_name == "gpt2-xl":
     NUM_OF_LAYERS = 48
