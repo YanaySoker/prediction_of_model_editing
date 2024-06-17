@@ -229,7 +229,7 @@ def harmonic_mean_list(list1, list2):
     return new_list
 
 
-def print_success_by_relations(relation_set=[], success_type="harmonic", specifisity_name="prob", by_probs=True, name="", size_limit=None, transparency=True):
+def print_success_by_relations(relation_set=[], success_type="harmonic", specifisity_name="prob", by_probs=True, size_limit=None, holdon = False):
     # specifisity types:
     # 0: "finals"
     # 2: "prob"
@@ -284,23 +284,46 @@ def print_success_by_relations(relation_set=[], success_type="harmonic", specifi
 
     mean_over_prompts = average_lists(results_all)
 
-    plt.plot(LAYERS_RANGE, mean_over_prompts, "black", label="average over prompts")
+    success_name = {"harmonic": "Harmonic Mean", "spcf": "Specificity", "eff": "Efficacy"}[success_type]
+
+    if holdon:
+        plt.plot(LAYERS_RANGE, mean_over_prompts, label=success_name)
+
+    else:
+        plt.plot(LAYERS_RANGE, mean_over_prompts, "black", label="average over prompts")
+        plt.legend()
+
+        t = 'probs' if by_probs else 'finals'
+
+        plt.title(success_name)
+        plt.grid()
+
+        filename = "success_by_layers_"
+
+        filename += f"{t}_{specifisity_name}.png"
+        plt.savefig(filename)
+        plt.clf()
+
+
+def print_success_multi_types(relation_set=[], success_types=["eff", "spcf"], specifisity_name="prob", by_probs=True, size_limit=None):
+
+    title = ""
+    for success_type in success_types:
+        print_success_by_relations(relation_set=relation_set, success_type=success_type, specifisity_name=specifisity_name, by_probs=by_probs,
+                               size_limit=size_limit, holdon=True)
+        success_name = {"harmonic": "Harmonic Mean", "spcf": "Specificity", "eff": "Efficacy"}[success_type]
+        title+=success_name+"_"
+
+    title=title[:-1]
     plt.legend()
 
-    max_idx_p = np.argmax(mean_over_prompts)
-    max_layer_p = LAYERS_RANGE[max_idx_p]
-
-
-    print(f"mean OLU: by prompts = {max_layer_p}")
-
     t = 'probs' if by_probs else 'finals'
-    title = {"harmonic": "Harmonic Mean", "spcf": "Specificity", "eff": "Efficacy"}[success_type]
     plt.title(title)
     plt.grid()
 
-    filename = "success_by_layers_"
+    filename = "success_by_layers_" + title
 
-    filename += f"{t}_{specifisity_name}.png"
+    filename += f"_{t}_{specifisity_name}.png"
     plt.savefig(filename)
     plt.clf()
 
@@ -332,6 +355,7 @@ def avrg_olu_exp_dict(olu_exp_dict, key, efficacy_probs, efficacy_flag):
 # functions:
 relations_histograms(train_set, cross_editing=False)
 print_statistics(train_set+test_set, min_size=0)
-print_success_by_relations(relation_set=range(125), success_type = "harmonic", specifisity_name="plus", by_probs=True, name="", size_limit=None, transparency=True)
+print_success_by_relations(relation_set=range(125), success_type = "spcf", specifisity_name="plus", by_probs=True, size_limit=None)
+print_success_multi_types(relation_set=range(125), success_types=["eff", "spcf"], specifisity_name="plus", by_probs=True, size_limit=None)
 # specifisity types: "finals"; "prob"; "plus"
 # success_type: "harmonic"; "spcf"; "eff"
