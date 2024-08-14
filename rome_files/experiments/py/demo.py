@@ -22,7 +22,7 @@ def demo_model_editing(
     requests: List[Dict],
     generation_prompts: List[str],
     alg_name: str = "ROME",
-    pre_k_and_v = None,            # Yanay. 
+    pre_k_and_v = None,
 ) -> Tuple[AutoModelForCausalLM, Dict[str, torch.Tensor]]:
     """
     Applies the selected model editing algorithm. Generates text both before and after
@@ -46,13 +46,12 @@ def demo_model_editing(
     print("layer index:", LAYER_IDX[0])
     hparams.layers=[LAYER_IDX[0]]   # New
     model_new, orig_weights = apply_method(
-        model, tok, requests, hparams, return_orig_weights=True, pre_k_and_v=pre_k_and_v  # Yanay. origin: model, tok, requests, hparams, return_orig_weights=True
+        model, tok, requests, hparams, return_orig_weights=True, pre_k_and_v=pre_k_and_v
     )
 
     return model_new, orig_weights
 
 
-# Yanay
 def demo_model_editing_k_and_v(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
@@ -84,7 +83,7 @@ def demo_model_editing_k_and_v(
     hparams.layers=[LAYER_IDX[0]]   # New
     print("hparams:", hparams)
 
-    model_new, orig_weights, k_and_v = apply_method(             # yanay. origin: model_new, orig_weights = apply_method(
+    model_new, orig_weights, k_and_v = apply_method(
         model, tok, requests, hparams, return_orig_weights=True
     )
 

@@ -464,7 +464,7 @@ class ModelAndTokenizer:
             assert model_name is not None
             model = AutoModelForCausalLM.from_pretrained(
                 model_name, low_cpu_mem_usage=low_cpu_mem_usage, torch_dtype=torch_dtype
-            ).to("cuda")    # yanay
+            ).to("cuda")
             nethook.set_requires_grad(False, model)
             model.eval().cuda()
         self.tokenizer = tokenizer
@@ -615,17 +615,6 @@ def decode_tokens(tokenizer, token_array):
 def find_token_range(tokenizer, token_array, substring):
     toks = decode_tokens(tokenizer, token_array)
     whole_string = "".join(toks)
-
-    # # yanay: debugging:
-    # try:
-    #     a=substring
-    #     b=whole_string
-    #     print(a, b)
-    #     print(a=="Elisa Brătianu", b=="The mother tongue of Elisa Brătianu is", a in b, [a[i]==b[21+i] for i in range(len(a))], )
-    #     print("Elisa Brătianu" in "The mother tongue of Elisa Brătianu is")
-    # except:
-    #     pass
-    # # and 
     
     print("substring:", substring)
     char_loc = whole_string.index(substring)
