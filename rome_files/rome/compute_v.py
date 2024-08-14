@@ -21,7 +21,7 @@ def compute_v(
     layer: int,
     left_vector: torch.Tensor,
     context_templates: List[str],
-    pre_k_and_v = None,   # Yanay
+    pre_k_and_v = None,
 ) -> torch.Tensor:
     """
     Computes the value (right) vector for the rank-1 update.
@@ -69,10 +69,10 @@ def compute_v(
     # rewrite layer, i.e. hypothesized fact lookup location, will induce the
     # target token to be predicted at the final layer.
     
-    if pre_k_and_v!=None:        # Yanay
+    if pre_k_and_v!=None:
         print("return pre v")
-        target = pre_k_and_v[1]  # Yanay
-    else:                        # Yanay
+        target = pre_k_and_v[1]
+    else:
     
         delta = torch.zeros((model.config.n_embd,), requires_grad=True, device="cuda")
         target_init, kl_distr_init = None, None
@@ -186,7 +186,6 @@ def compute_v(
     return right_vector
 
 
-# Yanay
 def compute_v_k_and_v(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
@@ -357,8 +356,6 @@ def compute_v_k_and_v(
     right_vector = (target - cur_output) / torch.dot(cur_input, left_vector)
 
     return right_vector, target
-    # yanay.
-    # origin: return right_vector
 
 
 def get_module_input_output_at_word(

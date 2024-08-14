@@ -63,7 +63,7 @@ def compute_u(
     hparams: ROMEHyperParams,
     layer: int,
     context_templates: List[str],
-    pre_k_and_v = None,   # Yanay
+    pre_k_and_v = None,
 ) -> torch.Tensor:
     """
     Computes the right vector used in constructing the rank-1 update matrix.
@@ -81,11 +81,11 @@ def compute_u(
     )
     if "subject_" in hparams.fact_token and hparams.fact_token.index("subject_") == 0:
         word = request["subject"]        
-        if pre_k_and_v!=None:             # Yanay
+        if pre_k_and_v!=None:
             print("return pre k")
-            cur_repr = pre_k_and_v[0]     # Yanay
+            cur_repr = pre_k_and_v[0]
         
-        else:     # Yanay
+        else:
             cur_repr = repr_tools.get_reprs_at_word_tokens(
                 context_templates=[
                     templ.format(request["prompt"]) for templ in context_templates
@@ -98,11 +98,11 @@ def compute_u(
         # Heuristic to choose last word. Not a huge deal if there's a minor
         # edge case (e.g. multi-token word) because the function below will
         # take the last token.
-        if pre_k_and_v!=None:             # Yanay
+        if pre_k_and_v!=None:
             print("return pre k 2")
-            cur_repr = pre_k_and_v[0]     # Yanay
+            cur_repr = pre_k_and_v[0]
         
-        else:     # Yanay
+        else:
             cur_repr = repr_tools.get_reprs_at_idxs(
                 contexts=[
                     templ.format(request["prompt"].format(request["subject"]))
@@ -130,7 +130,6 @@ def compute_u(
     return u / u.norm()
 
 
-# Yanay
 def compute_u_k_and_v(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
@@ -194,5 +193,3 @@ def compute_u_k_and_v(
         u = u.squeeze()
 
     return u / u.norm(), cur_repr
-    # yanay
-    # origin: return u / u.norm()

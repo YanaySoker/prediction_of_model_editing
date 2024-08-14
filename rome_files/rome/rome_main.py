@@ -22,7 +22,7 @@ def apply_rome_to_model(
     hparams: ROMEHyperParams,
     copy=False,
     return_orig_weights=False,
-    pre_k_and_v = None,         # Yanay
+    pre_k_and_v = None,
 ) -> Tuple[AutoModelForCausalLM, List[str]]:
     """
     Returns a model with the desired changes.
@@ -39,7 +39,7 @@ def apply_rome_to_model(
     weights_copy = {}
 
     for i, request in enumerate(requests):
-        deltas = execute_rome(model, tok, request, hparams, pre_k_and_v=pre_k_and_v)  # Yanay. origin: deltas = execute_rome(model, tok, request, hparams, pre_k_and_v=pre_k_and_v)
+        deltas = execute_rome(model, tok, request, hparams, pre_k_and_v=pre_k_and_v)
 
         with torch.no_grad():
             for w_name, (delta_u, delta_v) in deltas.items():
@@ -81,11 +81,9 @@ def apply_rome_to_model_k_and_v(
     weights_copy = {}
 
     for i, request in enumerate(requests):
-        deltas, k_and_v = execute_rome_k_and_v(model, tok, request, hparams)    # yanay. origin: deltas = execute_rome(model, tok, request, hparams)
+        deltas, k_and_v = execute_rome_k_and_v(model, tok, request, hparams)
 
     return model, weights_copy, k_and_v
-    # yanay. 
-    # origin: return model, weights_copy
     
 
 def execute_rome(
@@ -93,7 +91,7 @@ def execute_rome(
     tok: AutoTokenizer,
     request: Dict,
     hparams: ROMEHyperParams,
-    pre_k_and_v = None,       # Yanay
+    pre_k_and_v = None,
 ) -> Dict[str, Tuple[torch.Tensor]]:
     """
     Executes the ROME update algorithm for the specified update at the specified layer
@@ -127,7 +125,7 @@ def execute_rome(
             hparams,
             layer,
             get_context_templates(model, tok, hparams.context_template_length_params),
-            pre_k_and_v = pre_k_and_v,   # Yanay
+            pre_k_and_v = pre_k_and_v,
         )
         right_vector: torch.Tensor = compute_v(
             model,
@@ -137,7 +135,7 @@ def execute_rome(
             layer,
             left_vector,
             get_context_templates(model, tok, hparams.context_template_length_params),
-            pre_k_and_v = pre_k_and_v,   # Yanay
+            pre_k_and_v = pre_k_and_v,
         )
 
         with torch.no_grad():
@@ -161,7 +159,6 @@ def execute_rome(
     return deltas
 
 
-# Yanay
 def execute_rome_k_and_v(
     model: AutoModelForCausalLM,
     tok: AutoTokenizer,
@@ -197,7 +194,7 @@ def execute_rome_k_and_v(
     deltas = {}
     for layer in sorted(hparams.layers):
         # Compute rank-1 update matrix
-        left_vector, k_star = compute_u_k_and_v(        # yanay. origin: left_vector: torch.Tensor = compute_u(
+        left_vector, k_star = compute_u_k_and_v(
             model,
             tok,
             request,
@@ -207,7 +204,7 @@ def execute_rome_k_and_v(
         )
         print("Left vector shape:", left_vector.shape)
 
-        left_vector: torch.Tensor = left_vector      # yanay.
+        left_vector: torch.Tensor = left_vector
 
         right_vector, v_star = compute_v_k_and_v(
             model,
