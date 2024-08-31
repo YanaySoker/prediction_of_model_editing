@@ -41,6 +41,6 @@ else:
 
 knowns = KnownsDataset(DATA_DIR)
 noise_level = 3 * collect_embedding_std(mt, [k["subject"] for k in knowns])
-prefix = "/home/yanay.soker/Specificity_of_ROME/rome/"
+prefix = "./rome/"
 
 counterfacts_url = "https://rome.baulab.info/data/dsets/counterfact.json"
