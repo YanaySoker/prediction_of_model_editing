@@ -10,16 +10,10 @@ import math
 
 LABELS_DICT = labels_dict
 RESULTS_LIST = high_res_results
-TRAIN_SET = train_set
 LAYERS_RANGE = HIGH_RES_LAYERS_RANGE
-ALL_RELATIONS = list(LABELS_DICT.keys())
 
-OLU_BY_TYPES = dict()
-SUCCESS_BY_LAYERS = dict()
 FLS_DICT = dict()
-DEFAULTS_LAYER = dict()
 FINAL_PROBS = {"prob": None, "ratio": None}
-
 
 def optimal_layer_to_update_one_dict(results_dict, olu_type="harmonic", parameter=1, efficacy_probs=True, return_performance=False):
     keys = ["finals", None, "true", None, "probs plus"]
@@ -107,7 +101,7 @@ def take_second(val1, val2, _=None):
     return val2
 
 
-def optimal_layer_to_update_all_dicts(r_list, olu_type,efficacy_threshold=1, efficacy_probs=True, return_performance = False):
+def optimal_layer_to_update_all_dicts(olu_type,efficacy_threshold=1, efficacy_probs=True, return_performance = False):
     keys = ["finals", None, "true", None, "probs plus"]
     olu_dict = {key: {} for key in keys}
     for i in range(len(RESULTS_LIST)):
@@ -115,8 +109,6 @@ def optimal_layer_to_update_all_dicts(r_list, olu_type,efficacy_threshold=1, eff
         if res_dict==None:
             continue
         relation, subjects, _, _ = neighborhood[i]
-        if relation not in r_list:
-            continue
         if relation not in olu_dict[keys[0]].keys():
             for key in keys:
                 olu_dict[key][relation] = {}
@@ -137,7 +129,7 @@ def optimal_layer_to_update_all_dicts(r_list, olu_type,efficacy_threshold=1, eff
     return olu_dict
 
 
-def two_categories_dict(r_list, category1, category2):
+def two_categories_dict(category1, category2):
     dict1 = {}
     dict2 = {}
 
@@ -146,8 +138,6 @@ def two_categories_dict(r_list, category1, category2):
         if res_dict==None:
             continue
         relation, subjects, _, _ = neighborhood[i]
-        if relation not in r_list:
-            continue
         if relation not in dict1.keys():
             dict1[relation] = []
             dict2[relation] = []
@@ -197,15 +187,15 @@ def take_first_k(labels, k):
     return new_labels
 
 
-def fls_prob(r_list, k, ration_flag=False, min_n=0, mlp_flag = False):
+def fls_prob(k, ration_flag=False, min_n=0, mlp_flag = False):
     fls_dict = forward_success_dict(k, mlp_flag)
     p_dict = final_prob_dict(ratio=ration_flag)
 
     X = []  # FLS
     Y = []  # p
 
-    for r in r_list:
-        if r in p_dict.keys() and r in fls_dict.keys():
+    for r in p_dict.keys():
+        if r in fls_dict.keys():
             p_dict_r = p_dict[r]
             fls_dict_r = fls_dict[r]
 
@@ -300,11 +290,10 @@ def discreet_dict(values_dict, n_values):
     return int(values_dict*n_values)/n_values
 
 
-def fls_olu(relations_list_name, olu_type, k, contin_flag=False, efficacy_probs=True, plot=True,
+def fls_olu(olu_type, k, contin_flag=False, efficacy_probs=True, plot=True,
             label_to_search=None, disappear_flag=False, min_n=0, filter_dots = False, show_dots = True,
             correlation_by_average=True, n_values_to_discreet=None, return_len=False, common = False,
             min_v = 0, max_v = NUM_OF_LAYERS, spcf_key="probs plus", p_threshold=0, real_spcf = False):
-    relations_list = SET_NAMES[relations_list_name]
     keys = ["finals", "true", "probs plus"]
     x = []
     y = {key: [] for key in keys}
@@ -314,15 +303,15 @@ def fls_olu(relations_list_name, olu_type, k, contin_flag=False, efficacy_probs=
 
     fls_dict = forward_success_dict(k, contin_flag, label_to_search, disappear_flag, n_values_to_discreet, p_threshold=p_threshold)
     if real_spcf:
-        argmin_dict = get_success(relations_list_name, "argmin", "spcf", parameter=1, efficacy_prob=True, range_bound=None)
+        argmin_dict = get_success("argmin", "spcf", parameter=1, efficacy_prob=True, range_bound=None)
         argmin_spcf = argmin_dict[spcf_key]
     else:
         argmin_spcf = None
 
-    olu_dict = get_success(relations_list_name, "argmax", olu_type, parameter=1, efficacy_prob=True, range_bound=argmin_spcf)
+    olu_dict = get_success("argmax", olu_type, parameter=1, efficacy_prob=True, range_bound=argmin_spcf)
 
-    for relation in relations_list:
-        if relation in fls_dict.keys() and relation in olu_dict[spcf_key]:
+    for relation in fls_dict.keys():
+        if relation in olu_dict[spcf_key]:
             fls_r_dict = fls_dict[relation]
 
             for subject in fls_r_dict.keys():
@@ -372,10 +361,10 @@ def fls_olu(relations_list_name, olu_type, k, contin_flag=False, efficacy_probs=
     else:
             r = np.corrcoef(x, y[spcf_key])[0][1]
 
+    plt.xlabel("FLS") if type(k) == "int" else plt.xlabel("final probability")
+    plt.ylabel("OLU")
     if show_dots:
             plt.plot(x, y[spcf_key], "green", marker="o", linestyle="None", alpha=0.2)
-            plt.xlabel("FLS")
-            plt.ylabel("OLU")
             plt.plot(new_x, new_y)
             plt.plot(x_unusual_entropy, y_unusual_entropy[spcf_key], "red", marker="o", linestyle="None", alpha=0.3)
     else:
@@ -390,60 +379,7 @@ def fls_olu(relations_list_name, olu_type, k, contin_flag=False, efficacy_probs=
     plt.clf()
 
 
-def fls_olu_categories(relations_list, olu_type, k, category1=4, category2=30, contin_flag=False, disappear_flag=False, n_values_to_discreet=None, p_threshold=0, mlp_flag = False):
-    dict_1, dict_2 = two_categories_dict(relations_list, category1, category2)
-
-    x1 = []
-    y1 = []
-    x2 = []
-    y2 = []
-
-    fls_dict = forward_success_dict(k, contin_flag, None, disappear_flag, n_values_to_discreet, p_threshold=p_threshold, mlp_flag = mlp_flag)
-    olu_dict = optimal_layer_to_update_all_dicts(relations_list, olu_type, 1, efficacy_probs=True)
-
-    for relation in relations_list:
-        if relation in fls_dict.keys() and relation in olu_dict["probs plus"].keys():
-            fls_r_dict = fls_dict[relation]
-
-            for subject in fls_r_dict.keys():
-                if subject not in olu_dict["probs plus"][relation].keys():
-                    continue
-
-                current_v = olu_dict["probs plus"][relation][subject]
-
-                if subject in dict_1[relation]:
-                    x1.append(fls_r_dict[subject])
-                    y1.append(current_v)
-                elif subject in dict_2[relation]:
-                    x2.append(fls_r_dict[subject])
-                    y2.append(current_v)
-
-    print("category 1:", len(x1), "category 2:", len(x2))
-
-    new_x1, new_y1, n1 = to_average(x1, y1, min_n, True)
-    r1 = np.corrcoef(new_x1, new_y1)[0][1]
-    new_x2, new_y2, n2 = to_average(x2, y2, min_n, True)
-    r2 = np.corrcoef(new_x2, new_y2)[0][1]
-    n = n1+n2
-
-
-    plt.plot(x1, y1, "green", marker="o", linestyle="None", alpha=0.5)
-    plt.plot(new_x1, new_y1, "black")
-    plt.plot(x2, y2, "red", marker="o", linestyle="None", alpha=0.5)
-    plt.plot(new_x2, new_y2, "black")
-    plt.xlabel("FLS")
-    plt.ylabel("OLU")
-
-    plt.grid()
-
-    title = f"OLU as a Function of FLS, Two Categories\nk: {k}, n = {n}, r{category1} = {str(r1)[:4]}, r{category2} = {str(r2)[:4]}"
-    plt.title(title, fontsize=10)
-    filename = f"OLU as a Function of FLS, Two Categories; {olu_type}; {k}"
-    plt.savefig(filename)
-    plt.clf()
-
-
-def fls_co_olu(relations_list, olu_type, k, contin_flag=False, parameter=1, efficacy_probs=True, plot=True,
+def fls_co_olu(olu_type, k, contin_flag=False, parameter=1, efficacy_probs=True, plot=True,
             label_to_search=None, disappear_flag=False, min_n=0, n_values_to_discreet=None, mlp_flag = False):
     keys = ["finals", "true", "probs plus"]
     x = None
@@ -451,10 +387,10 @@ def fls_co_olu(relations_list, olu_type, k, contin_flag=False, parameter=1, effi
     y = {key: [] for key in keys}
 
     fls_dict = forward_success_dict(k, contin_flag, label_to_search, disappear_flag, n_values=n_values_to_discreet, mlp_flag = mlp_flag)
-    performance_dict = optimal_layer_to_update_all_dicts(relations_list, olu_type, parameter, efficacy_probs, return_performance=True)
+    performance_dict = optimal_layer_to_update_all_dicts(olu_type, parameter, efficacy_probs, return_performance=True)
 
-    for relation in relations_list:
-        if relation in fls_dict.keys() and relation in performance_dict[keys[0]]:
+    for relation in fls_dict.keys():
+        if relation in performance_dict[keys[0]]:
             fls_r_dict = fls_dict[relation]
 
             for subject in fls_r_dict.keys():
@@ -515,17 +451,10 @@ def mean(number1, number2, factor=0.0):
     return (number1*factor+number2)/(1+factor)
 
 
-def success_by_layer(relations_list_name, layer, success_type, parameter, efficacy_prob):
+def success_by_layer(layer, success_type, parameter, efficacy_prob):
     if success_type not in ["spcf", "harmonic", "product", "eff"]:
         print(f"EEROR: success_type = {success_type}")
         return -1
-
-    if type(relations_list_name)==str:
-        if (relations_list_name, layer, success_type, parameter) in SUCCESS_BY_LAYERS.keys():
-            return SUCCESS_BY_LAYERS[(relations_list_name, layer, success_type, parameter)]
-        relations_list = SET_NAMES[relations_list_name]
-    else:
-        relations_list=relations_list_name
 
     keys = {"finals":0, "true":2, "probs plus":4}
     success_dict = {key: {} for key in keys}
@@ -537,8 +466,6 @@ def success_by_layer(relations_list_name, layer, success_type, parameter, effica
         if res_dict==None:
             continue
         relation, subjects, _, _ = neighborhood[i]
-        if relation not in relations_list:
-                continue
         for key in keys.keys():
                 spcf_idx = keys[key]
 
@@ -569,8 +496,6 @@ def success_by_layer(relations_list_name, layer, success_type, parameter, effica
 
                     success_dict[key][relation][subject] = current_success
 
-    if type(relations_list_name)==str:
-        SUCCESS_BY_LAYERS[(relations_list_name, layer, success_type, parameter)] = success_dict
     return success_dict
 
 
@@ -594,20 +519,18 @@ def arg_max(l):
     return m[0]
 
 
-def get_max_and_i(relations_list_name, layer_i, success_type, parameter=1, efficacy_prob=True, min_flag=False, range_bound = None, arg_flag = False):
+def get_max_and_i(layer_i, success_type, parameter=1, efficacy_prob=True, min_flag=False, range_bound = None, arg_flag = False):
     # range_bound = dict{r: dict{ s: l}}
     keys = ["finals", "true", "probs plus"]
 
     success_dict_of_all_layer = {key: {} for key in keys}
     if arg_flag:
         f = arg_min if min_flag else arg_max
-        f_name = "arg min" if min_flag else "arg max"
     else:
         f = min if min_flag else max
-        f_name = "min" if min_flag else "max"
 
     for i in LAYERS_RANGE:
-        current_success_dict = success_by_layer(relations_list_name, i, success_type, parameter, efficacy_prob)
+        current_success_dict = success_by_layer(i, success_type, parameter, efficacy_prob)
         for key in keys:
             for r in current_success_dict[key].keys():
                 if r not in success_dict_of_all_layer[key].keys():
@@ -630,8 +553,6 @@ def get_max_and_i(relations_list_name, layer_i, success_type, parameter=1, effic
             for s in success_dict_of_all_layer[key][r].keys():
                 max_success_dict[key][r][s] = f(success_dict_of_all_layer[key][r][s])
 
-    SUCCESS_BY_LAYERS[(relations_list_name, layer_i, success_type, parameter)] = i_success_dict
-    OLU_BY_TYPES[(relations_list_name, f_name, success_type, parameter)] = max_success_dict
     return max_success_dict, i_success_dict
 
 
@@ -647,25 +568,22 @@ def minus_dicts(dict1, dict2, plus_flag=False):
     return dict1-dict2
 
 
-def get_success(relations_list_name, layer_type, success_type, parameter=1, efficacy_prob=True, range_bound = None):
+def get_success(layer_type, success_type, parameter=1, efficacy_prob=True, range_bound = None):
     if type(layer_type)==int:
-        return success_by_layer(relations_list_name, layer_type, success_type, parameter, efficacy_prob)
-
-    if type(relations_list_name)==str and (relations_list_name, layer_type, success_type, parameter) in OLU_BY_TYPES.keys() and range_bound is None:
-        return OLU_BY_TYPES[(relations_list_name, layer_type, success_type, parameter)]
+        return success_by_layer(layer_type, success_type, parameter, efficacy_prob)
 
     op_list = ["max", "min", "argmax", "argmin"]
     if layer_type in op_list or layer_type[-5:] == " diff":
         default_layer = 4 if layer_type in op_list else int(layer_type[:-5])
         arg_flag = layer_type[:3]=="arg"
         min_flag = layer_type[-3:]=="min"
-        max_success_dict, i_success_dict = get_max_and_i(relations_list_name, default_layer, success_type, parameter, efficacy_prob, min_flag=min_flag, range_bound=range_bound, arg_flag=arg_flag)
+        max_success_dict, i_success_dict = get_max_and_i(default_layer, success_type, parameter, efficacy_prob,
+                                                         min_flag=min_flag, range_bound=range_bound, arg_flag=arg_flag)
 
         if layer_type in op_list:
             return max_success_dict
         if layer_type[-5:] == " diff":
             success_dict = minus_dicts(max_success_dict, i_success_dict)
-            OLU_BY_TYPES[(relations_list_name, layer_type, success_type, parameter)] = success_dict
             return success_dict
 
     keys = ["finals", "true", "probs plus"]
@@ -673,7 +591,7 @@ def get_success(relations_list_name, layer_type, success_type, parameter=1, effi
     success_dict_of_all_layer = {key: {} for key in keys}
 
     for i in LAYERS_RANGE:
-        current_success_dict = success_by_layer(relations_list_name, i, success_type, parameter, efficacy_prob)
+        current_success_dict = success_by_layer(i, success_type, parameter, efficacy_prob)
         for key in keys:
           for r in current_success_dict[key].keys():
             if r not in success_dict_of_all_layer[key].keys():
@@ -694,7 +612,6 @@ def get_success(relations_list_name, layer_type, success_type, parameter=1, effi
         for s in success_dict_of_all_layer[key][r].keys():
             success_dict[key][r][s] = f(success_dict_of_all_layer[key][r][s])
 
-    OLU_BY_TYPES[(relations_list_name, layer_type, success_type, parameter)] = success_dict
     return success_dict
 
 
@@ -702,8 +619,7 @@ def no_change(x):
     return x
 
 
-def success_as_a_function_of_fls(relations_list_name, k, layer_type, success_type, parameter=1, efficacy_prob=True, contin_flag=False, print_flag=True, dots_flag=False, min_n=0, n_values=30, mlp_flag = False, category1=-1, category2=-1, hold_on = False):
-    # keys = ["finals", "true", "probs plus"]
+def success_as_a_function_of_fls(k, layer_type, success_type, parameter=1, efficacy_prob=True, contin_flag=False, print_flag=True, dots_flag=False, min_n=0, n_values=30, mlp_flag = False, category1=-1, category2=-1, hold_on = False):
     keys = ["probs plus"]
     two_categories_flag = category1>=0 and category2>=0
 
@@ -712,17 +628,17 @@ def success_as_a_function_of_fls(relations_list_name, k, layer_type, success_typ
 
     fls_dict = forward_success_dict(k, contin_flag, label_to_search=None, disappear_flag=False, n_values=n_values, mlp_flag = mlp_flag)
 
-    success = get_success(relations_list_name, layer_type, success_type, parameter, efficacy_prob)
+    success = get_success(layer_type, success_type, parameter, efficacy_prob)
 
     if two_categories_flag:
-        dict1, dict2 = two_categories_dict(SET_NAMES[relations_list_name], category1, category2)
+        dict1, dict2 = two_categories_dict(category1, category2)
         x = [[],[]]
         y = [{k: [] for k in keys}, {k: [] for k in keys}]
 
     if not hold_on:
         plt.figure(figsize=(10, 6))
-    for rel in SET_NAMES[relations_list_name]:
-            if rel in fls_dict.keys() and rel in success[keys[0]].keys():
+    for rel in fls_dict.keys():
+            if rel in success[keys[0]].keys():
                 if two_categories_flag:
                     category_1_rel = dict1[rel]
 
@@ -752,6 +668,7 @@ def success_as_a_function_of_fls(relations_list_name, k, layer_type, success_typ
             y = [y]
 
     colours = [["blue", "green"], ["red", "black"]]
+    colour_of_success_type = {"harmonic": "blue", "spcf": "orange", "eff": "green"}[success_type]
     rs = []
 
     key = keys[0]
@@ -766,7 +683,7 @@ def success_as_a_function_of_fls(relations_list_name, k, layer_type, success_typ
 
                 if hold_on:
                     success_type_name = {"harmonic": "harmonic mean", "spcf": "specificity", "eff": "efficacy"}[success_type]
-                    plt.plot(new_x, new_y, label=f"{success_type_name}; r = {str(r)[:4]}")
+                    plt.plot(new_x, new_y, colour_of_success_type, label=f"{success_type_name}; r = {str(r)[:4]}")
                 else:
                     plt.plot(new_x, new_y, colours[1][i])
                 plt.grid()
@@ -853,8 +770,9 @@ def to_percentage(X, Y, threshold, min_n):
     return unique_X, [counts_relevant[i]*100 / counts[i] for i in range(len(counts_relevant))]
 
 
-def percentage_of_low_success(relations_list_name, k, layer_type, success_type, parameter=0.995, threshold_range = [i/10 for i in range(1,10)], efficacy_prob=True, contin_flag=False, spcf_types=[], min_n=0, n_values=None, mlp_flag=False):
-    x, y = success_as_a_function_of_fls(relations_list_name, k, layer_type, success_type, parameter, efficacy_prob, contin_flag, print_flag=False, n_values=n_values, mlp_flag=mlp_flag)
+def percentage_of_low_success(k, layer_type, success_type, parameter=1, threshold_range = [i/10 for i in range(1,10)], efficacy_prob=True, contin_flag=False, spcf_types=[], min_n=0, n_values=None, mlp_flag=False):
+    x, y = success_as_a_function_of_fls(k, layer_type, success_type, parameter, efficacy_prob, contin_flag,
+                                        print_flag=False, n_values=n_values, mlp_flag=mlp_flag)
     general_title = f"percentage of proximity to max" if type(layer_type)==str and layer_type[-4:]=="diff" else f"percentage of low success ({success_type})"
     layer_str = layer_type[:-5] if type(layer_type)==str and layer_type[-4:]=="diff" else layer_type
     title = general_title + f"\nk={k}, layer ={layer_str}"
@@ -868,6 +786,8 @@ def percentage_of_low_success(relations_list_name, k, layer_type, success_type, 
 
         ax.legend()
         ax.grid()
+        plt.xlabel("FLS") if type(k) == "int" else plt.xlabel("final probability")
+        plt.ylabel("%")
 
         current_title = title
         if len(threshold_range)==1:
@@ -879,25 +799,25 @@ def percentage_of_low_success(relations_list_name, k, layer_type, success_type, 
         plt.clf()
 
 
-def success_diff_dict(r_set, layer1, layer2, success_type, efficacy_prob=True):
-    success1 = get_success(r_set, layer1, success_type, 1, efficacy_prob)
-    success2 = get_success(r_set, layer2, success_type, 1, efficacy_prob)
+def success_diff_dict(layer1, layer2, success_type, efficacy_prob=True):
+    success1 = get_success(layer1, success_type, 1, efficacy_prob)
+    success2 = get_success(layer2, success_type, 1, efficacy_prob)
     return minus_dicts(success1, success2)
 
 
-def percentage_of_OLU_lower_than(r_set, k, success_type, threshold_layer = 15, efficacy_prob=True, spcf_types=["probs plus"], min_n=0, n_values=None, p_threshold=0, mlp_flag = False):
+def percentage_of_OLU_lower_than(k, success_type, threshold_layer = 15, efficacy_prob=True, spcf_types=["probs plus"], min_n=0, n_values=None, p_threshold=0, mlp_flag = False):
     # percentage for OLU < threshold_layer (if threshold_layer is int) or score[threshold_layer[0]] < score[threshold_layer[1]] (if it is a couple).
     x = []
     y = {k: [] for k in spcf_types}
 
     fls_dict = forward_success_dict(k, contin_flag=False, label_to_search=None, disappear_flag=False, n_values=n_values, p_threshold=p_threshold, mlp_flag = mlp_flag)
     if type(threshold_layer)==list:
-        olu_dict = success_diff_dict(r_set, threshold_layer[0], threshold_layer[1], success_type, efficacy_prob=True)
+        olu_dict = success_diff_dict(threshold_layer[0], threshold_layer[1], success_type, efficacy_prob=True)
     else:
-        olu_dict = optimal_layer_to_update_all_dicts(r_set, success_type, efficacy_threshold=1, efficacy_probs=efficacy_prob)
+        olu_dict = optimal_layer_to_update_all_dicts(success_type, efficacy_threshold=1, efficacy_probs=efficacy_prob)
 
-    for rel in r_set:
-        if rel in fls_dict.keys() and rel in olu_dict[spcf_types[0]].keys():
+    for rel in fls_dict.keys():
+        if rel in olu_dict[spcf_types[0]].keys():
             for s in fls_dict[rel]:
               if s in olu_dict[spcf_types[0]][rel].keys():
                 x.append(fls_dict[rel][s])
@@ -917,7 +837,7 @@ def percentage_of_OLU_lower_than(r_set, k, success_type, threshold_layer = 15, e
             filename = f"percentage of OLU lower than {threshold_layer}; {success_type}; {key}"
             title = f"Percentage of OLU lower than {threshold_layer}\nk = {k}, r = {str(r)[:4]}"
         plt.plot(temp_x, temp_y, marker="o", linestyle="None")
-        plt.xlabel("FLS")
+        plt.xlabel("FLS") if type(k) == "int" else plt.xlabel("final probability")
         plt.ylabel("%")
         plt.grid()
 
@@ -1003,252 +923,13 @@ def calc_inter_fraction(lists, per=0.25):
     return lower_list, upper_list
 
 
-def success_by_relations_two_categories(relation_set=[], success_type="harmonic", category1=4, category2=30, norm_by_max = False, inter_fraction = None, upper_bound=-1):
-    # specifisity types:
-    # 0: "finals"
-    # 2: "prob"
-    # 4: "plus"
-
-    specifisity_type = 4
-    dict_1, dict_2 = two_categories_dict(train_set+test_set, category1, category2)
-
-    to_print = [i for i in range(len(RESULTS_LIST)) if RESULTS_LIST[i] is not None]
-    if len(relation_set) > 0:
-        to_print = [i for i in to_print if i in relation_set]
-
-    # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 9))
-    relations_list = [nghbr[0] for nghbr in neighborhood]
-    if [] in relations_list:
-        relations_list.remove([])
-    relations_list = set(relations_list)
-    relations_list = list(relations_list)
-
-    results_by_relation1 = [[] for _ in range(len(relations_list))]
-    results_by_relation2 = [[] for _ in range(len(relations_list))]
-    results_all1 = []
-    results_all2 = []
-
-    for i in to_print:
-        relation = neighborhood[i][0]
-        relation_idx = relations_list.index(relation)
-        subjects = neighborhood[i][1]
-
-        results_dict = RESULTS_LIST[i]
-        spcf_scores = results_dict["neighborhood_scores"]
-        eff_scores = results_dict["efficacy_scores"]
-
-        count = 0
-        for subj_idx in range(len(spcf_scores[0][0])):
-            count += 1
-            specificity = [spcf_scores[L][specifisity_type][subj_idx] for L in range(len(LAYERS_RANGE))]
-            efficacy = [eff_scores[L][1][subj_idx] for L in range(len(LAYERS_RANGE))]
-
-            new_result_list = {"harmonic": harmonic_mean_list(specificity, efficacy), "spcf": specificity, "eff": efficacy}[success_type]
-
-            if norm_by_max:
-                max_success = max(new_result_list)
-                new_result_list = change_list_by_factors(new_result_list, [max_success, max_success], ["minus reverse", "div"])
-
-            subject = subjects[subj_idx]
-
-            if subject in dict_1[relation]:
-                results_by_relation1[relation_idx].append(new_result_list)
-                results_all1.append(new_result_list)
-            elif subject in dict_2[relation]:
-                results_by_relation2[relation_idx].append(new_result_list)
-                results_all2.append(new_result_list)
-
-    trios = [(category1 ,results_by_relation1, results_all1), (category2 ,results_by_relation2, results_all2)]
-    for trio in trios:
-        category, results_by_relation, results_all = trio
-        max_list = max(len(l) for l in results_by_relation)
-
-        mean_results_by_relations = []
-        for i in range(len(results_by_relation)):
-                rel_results = results_by_relation[i]
-                if len(rel_results)==0:
-                    continue
-
-                alpha = len(rel_results)/max_list
-                color_name = "blue"
-
-                average_results = average_lists(rel_results)
-                mean_results_by_relations.append(average_results)
-                # if inter_fraction is None:
-                #     plt.plot(LAYERS_RANGE, average_results, color_name, alpha=alpha)
-        if inter_fraction is not None:
-            low_percentile, high_percentile = calc_inter_fraction(results_all, inter_fraction)
-            plt.plot(LAYERS_RANGE, low_percentile, "gray")
-            plt.plot(LAYERS_RANGE, high_percentile, "gray")
-
-            low_percentile, high_percentile = calc_inter_fraction(mean_results_by_relations, inter_fraction)
-            plt.plot(LAYERS_RANGE, low_percentile, "pink")
-            plt.plot(LAYERS_RANGE, high_percentile, "pink")
-
-        mean_over_prompts = average_lists(results_all)
-        mean_over_relations = average_lists(mean_results_by_relations)
-
-        if upper_bound>0:
-            plt.plot(LAYERS_RANGE[:upper_bound+1], mean_over_prompts[:upper_bound+1], label=f"category {category}")
-            # plt.plot(LAYERS_RANGE[:upper_bound+1], mean_over_relations[:upper_bound+1], "red", label="mean over relations")
-        else:
-            plt.plot(LAYERS_RANGE, mean_over_prompts, label=f"category {category}")
-            # plt.plot(LAYERS_RANGE, mean_over_relations, "red", label="mean over relations")
-
-        if upper_bound==-1:
-            plt.legend()
-
-        max_idx_p = np.argmax(mean_over_prompts)
-        max_layer_p = LAYERS_RANGE[max_idx_p]
-        max_idx_r = np.argmax(mean_over_relations)
-        max_layer_r = LAYERS_RANGE[max_idx_r]
-
-        print(f"mean OLU: by prompts = {max_layer_p}; by relations = {max_layer_r}")
-
-    title = {"harmonic": "Harmonic Mean", "spcf": "Specificity", "eff": "Efficacy"}[success_type]
-    title+= f" by Category (average over prompts)"
-    filename = title
-    if inter_fraction is not None:
-        title+= f"\nrange: {inter_fraction} to {1-inter_fraction}"
-        filename+=" (range)"
-    plt.title(title)
-    plt.grid()
-    plt.xlabel("layer")
-    plt.ylabel("score")
-
-    plt.savefig(filename)
-    plt.clf()
-
-
-def success_in_range_as_a_function_of_olu(relations_list_name, success_type, ranges=[(0,13), (22,32)], representatives=None, efficacy_prob=True, correlation_flag=False):
-    # keys = ["finals", "true", "probs plus"]
-    key = "probs plus"
-
-    low1, high1 = ranges[0]
-    low2, high2 = ranges[1]
-
-    range1x = []
-    range1y = {"self": [], "other": []}
-    range2x = []
-    range2y = {"self": [], "other": []}
-
-    Xs = [range1x, range2x]
-    Ys = [range1y, range2y]
-
-    if representatives is not None:
-        rep1, rep2 = representatives
-        ranges_to_look_at = [(rep1, rep1), (rep2, rep2)]
-    else:
-        ranges_to_look_at = ranges
-
-    olu_dict = optimal_layer_to_update_all_dicts(SET_NAMES[relations_list_name], "harmonic", 1, efficacy_prob)
-    success = get_success(relations_list_name, "all", success_type, 1, efficacy_prob)
-
-    for rel in SET_NAMES[relations_list_name]:
-        if rel in olu_dict[key].keys() and rel in success[key].keys():
-            for s in olu_dict[key][rel]:
-              if s in success[key][rel].keys():
-                  current_olu = olu_dict[key][rel][s]
-                  if current_olu>=low1 and current_olu<=high1:
-                      index = 0
-                  elif current_olu>=low2 and current_olu<=high2:
-                      index = 1
-                  else:
-                      continue
-
-                  x = Xs[index]
-                  y = Ys[index]
-                  start_self, end_self = ranges_to_look_at[index]
-                  start_other, end_other = ranges_to_look_at[1-index]
-                  values_self = success[key][rel][s][start_self:end_self+1]
-                  values_other = success[key][rel][s][start_other:end_other + 1]
-                  min_self = min(values_self)
-                  min_other = min(values_other)
-
-                  x.append(current_olu)
-                  y["self"].append(min_self)
-                  y["other"].append(min_other)
-
-    plt.figure(figsize=(10, 6))
-    summaries = [[], []]
-    for i in [0,1]:
-        x = Xs[i]
-        y = Ys[i]
-
-        if len(x) == 0:
-            continue
-
-        colours = ["black", "red"]
-        c = 0
-        for y_current in [y["self"], y["other"]]:
-            new_x, new_y = to_average(x, y_current, min_n)
-            if correlation_flag:
-                r = np.corrcoef(new_x, new_y)[0][1]
-                summaries.append(r)
-            else:
-                summaries[i].append(average(y_current))
-
-            plt.plot(new_x, new_y, colours[c])
-            c+=1
-
-    plt.grid()
-    success_name = {"harmonic": "Success", "spcf": "Specificity", "eff": "Efficacy"}[success_type]
-    representatives = f"{representatives[0], representatives[1]}" if representatives is not None else "ranges"
-    title = f"{success_name} ({representatives}) as a Function of OLU\nn = {len(Xs[0])+len(Xs[1])}"
-    ind = "r" if correlation_flag else "mean"
-    for i in range(len(summaries)):
-        for j in range(2):
-            in_range = ["self", "other"][j]
-            title+=f"; {ind}{i+1}{in_range}={str(summaries[i][j])[:4]}"
-
-    plt.title(title)
-    plt.xlabel("OLU")
-    plt.ylabel("success")
-    filename = f"Success of Two Ranges as a Function of olu; {key}, {representatives}, {success_type}"
-    plt.savefig(filename)
-    plt.clf()
-
-
 def std(l):
     avrg = average(l)
     var = sum([(x-avrg)**2 for x in l])/len(l)
     return math.sqrt(var)
 
 
-def success_of_categories(relations_list_name, success_type="harmonic", layer_type="max", k="all", category1=4, category2=30):
-    dict1, dict2 = two_categories_dict(SET_NAMES[relations_list_name], category1, category2)
-    success = get_success(relations_list_name, layer_type, success_type, parameter=1, efficacy_prob=True)
-    success = success["probs plus"]
-
-    if type(k)==int:
-         fls_dict = forward_success_dict(k, contin_flag=False, label_to_search=None, disappear_flag=False, n_values=n_values)
-         relevant_dict = {rel: [s for s in list(fls_dict[rel].keys()) if fls_dict[rel][s]==k] for rel in list(fls_dict.keys())}
-
-    success1 = []
-    success2 = []
-
-    for rel in success.keys():
-        success_rel = success[rel]
-        for s in success_rel.keys():
-            if s in dict1[rel]:
-                success_to_add_to = success1
-            elif s in dict2[rel]:
-                success_to_add_to = success2
-            else:
-                continue
-
-            if k=="all" or (rel in relevant_dict.keys() and s in relevant_dict[rel]):
-                success_to_add_to.append(success_rel[s])
-
-    means = [average(success1), average(success2)]
-    stds = [std(success1), std(success2)]
-    plt.errorbar(["lower category", "higher category"], means, stds, fmt='ok', lw=3)
-    plt.grid()
-    plt.savefig(f"success of two categories {success_type}")
-    plt.clf()
-
-
-def fls_extremum_spcf(relations_list_name, k, min_n=0, show_dots = True,
+def fls_extremum_spcf(k, min_n=0, show_dots = True,
             correlation_by_average=True, n_values_to_discreet=None, min_v = 0, max_v = NUM_OF_LAYERS,
             spcf_key="probs plus", p_threshold=0, succes_instead_of_spcf=False):
 
@@ -1257,23 +938,21 @@ def fls_extremum_spcf(relations_list_name, k, min_n=0, show_dots = True,
     argmax_real_spcf_g = {"x": [], "y": [], "name": argmax_name}
     min_spcf_g = {"x": [], "y": [], "name": "Min Specificity"}
 
-    relations_list = SET_NAMES[relations_list_name]
-
     fls_dict = forward_success_dict(k, n_values=n_values_to_discreet, p_threshold=p_threshold)
 
-    argmin_dict = get_success(relations_list_name, "argmin", "spcf", parameter=1, efficacy_prob=True, range_bound=None)
+    argmin_dict = get_success("argmin", "spcf", parameter=1, efficacy_prob=True, range_bound=None)
     argmin_spcf = argmin_dict[spcf_key]
     if succes_instead_of_spcf:
-        argmax_real_dict = get_success(relations_list_name, "argmax", "harmonic", parameter=1, efficacy_prob=True, range_bound=argmin_spcf)
+        argmax_real_dict = get_success("argmax", "harmonic", parameter=1, efficacy_prob=True, range_bound=argmin_spcf)
     else:
-        argmax_real_dict = get_success(relations_list_name, "argmax", "spcf", parameter=1, efficacy_prob=True, range_bound=argmin_spcf)
+        argmax_real_dict = get_success("argmax", "spcf", parameter=1, efficacy_prob=True, range_bound=argmin_spcf)
     argmax_real_spcf = argmax_real_dict[spcf_key]
-    min_dict = get_success(relations_list_name, "min", "spcf", parameter=1, efficacy_prob=True, range_bound=None)
+    min_dict = get_success("min", "spcf", parameter=1, efficacy_prob=True, range_bound=None)
     min_spcf = min_dict[spcf_key]
 
 
-    for relation in relations_list:
-        if relation in argmin_spcf.keys() and relation in fls_dict.keys():
+    for relation in argmin_spcf.keys():
+        if relation in fls_dict.keys():
             fls_r_dict = fls_dict[relation]
 
             for subject in fls_r_dict.keys():
@@ -1308,7 +987,7 @@ def fls_extremum_spcf(relations_list_name, k, min_n=0, show_dots = True,
 
          if show_dots:
                  plt.plot(x, y, "green", marker="o", linestyle="None", alpha=0.2)
-                 plt.xlabel("FLS")
+                 plt.xlabel("FLS") if type(k) == "int" else plt.xlabel("final probability")
                  plt.ylabel("OLU")
                  plt.plot(new_x, new_y)
          else:
@@ -1322,12 +1001,12 @@ def fls_extremum_spcf(relations_list_name, k, min_n=0, show_dots = True,
          plt.clf()
 
 
-def scores_as_a_function_of_fls(relations_list_name, k, layer_type, min_n=0, n_values=30):
+def scores_as_a_function_of_fls(k, layer_type, min_n=0, n_values=30):
     plt.figure(figsize=(10, 7.5))
     for success_type in ["harmonic", "spcf", "eff"]:
-        n = success_as_a_function_of_fls(relations_list_name, k, layer_type, success_type, parameter=1, efficacy_prob=True,
-                                 contin_flag=False, print_flag=True, dots_flag=False, min_n=min_n, n_values=n_values,
-                                 mlp_flag=False, category1=-1, category2=-1, hold_on=True)
+        n = success_as_a_function_of_fls(k, layer_type, success_type, parameter=1, efficacy_prob=True,
+                                         contin_flag=False, print_flag=True, dots_flag=False, min_n=min_n,
+                                         n_values=n_values, mlp_flag=False, category1=-1, category2=-1, hold_on=True)
 
     measure = "FLS" if type(k) == int else "Final Prob"
     title = f"Score ({layer_type}) as a Function of {measure}\nn = {n}"
@@ -1346,18 +1025,22 @@ def scores_as_a_function_of_fls(relations_list_name, k, layer_type, min_n=0, n_v
 # RUNS #
 ########
 
+## Percentage of low success (score < threshold) as a function of FLS or final probability (depending on k)
+percentage_of_low_success(k, 4, "harmonic", threshold_range=[0.9], spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
 
-fls_prob(r_set, k, ration_flag=True, min_n=min_n)
-fls_olu(relations_list_name="all", olu_type="harmonic", k="prob", contin_flag=False, efficacy_probs=True, plot=True, label_to_search=None, disappear_flag=False, min_n=min_n, filter_dots=False, show_dots=False, correlation_by_average=True, n_values_to_discreet=n_values, min_v = 0, p_threshold=p_threshold, common=True, real_spcf=True)
-fls_olu_categories(r_set, "harmonic", k, category1=4, category2=30, contin_flag=False, disappear_flag=False, n_values_to_discreet=None, p_threshold=p_threshold)
-fls_co_olu(train_set, "harmonic", k, contin_flag=False, parameter=1, efficacy_probs=True, plot=True, label_to_search=None, disappear_flag=False, min_n=min_n, n_values_to_discreet=n_values)
-success_as_a_function_of_fls("all", k, layer_type=4, success_type="eff", parameter=1, efficacy_prob=True, contin_flag=False, print_flag=True, dots_flag=False, min_n=min_n, category1=-1, category2=-1, n_values=n_values)
-# fls or final prob etc.
-percentage_of_low_success("all", "prob", 4, "harmonic", parameter=1, threshold_range = [0.9], efficacy_prob=True, contin_flag=False, spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
-percentage_of_OLU_lower_than(r_set, k, "harmonic", threshold_layer=[4, 30], efficacy_prob=True, spcf_types=["probs plus"], min_n=min_n, p_threshold=p_threshold, n_values=7)
-fls_extremum_spcf("all", "prob", min_n=min_n, show_dots=False, correlation_by_average=True, n_values_to_discreet=30, min_v=0,
-                  max_v=NUM_OF_LAYERS, spcf_key="probs plus", p_threshold=0, succes_instead_of_spcf=True)
-success_of_categories("all", success_type="harmonic", layer_type=4, k="all", category1=4, category2=30)
-success_by_relations_two_categories(relation_set=range(125), success_type="eff", category1=4, category2=30, norm_by_max=False, inter_fraction=None, upper_bound=10)
-success_in_range_as_a_function_of_olu("all", "harmonic", ranges=[(0,13), (22,32)], representatives=[4,30])
-scores_as_a_function_of_fls("all", k, 4, min_n, n_values)
+## percentage of:
+## if threshold_layer is int: OLU < threshold_layer
+## if threshold_layer is [int1, int2]: sore[int1] < score[int2]
+percentage_of_OLU_lower_than(k, "harmonic", threshold_layer=[1,23], spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
+
+## score (harmonic mean, efficacy, specificity) as a function of FLS or final probability (depending on k)
+scores_as_a_function_of_fls(k, 1, min_n, n_values)
+
+## OLU as a function of FLS or final probability (depending on k)
+fls_olu(olu_type="harmonic", k=k, show_dots=False, n_values_to_discreet=n_values, common=False, real_spcf=False)
+
+## co-OLU (the layer where the average score of all prompts in the set) as a function of FLS or final probability (depending on k)
+fls_co_olu("harmonic", k, min_n=min_n, n_values_to_discreet=n_values)
+
+## Extremum of spcf as a function of FLS
+fls_extremum_spcf("prob", min_n=min_n, show_dots=False, correlation_by_average=True, n_values_to_discreet=n_values, spcf_key="probs plus", succes_instead_of_spcf=False)
