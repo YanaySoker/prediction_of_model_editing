@@ -1,5 +1,3 @@
-# from analysis_new import *
-# from analysis_ll import *
 from neighborhood import d as neighborhood
 from scores_0_6__7_24__26_51__52_80__82_86__88_102 import d as results_list
 import copy
@@ -46,7 +44,7 @@ def flip_all(lists):
         return 1-lists
 
 
-def olu_lists(r_list, olu_type, spcf_type, efficacy_type, min_size=0, return_all_scores = False, cross_editing=False):
+def olu_lists(olu_type, spcf_type, efficacy_type, min_size=0, return_all_scores = False):
     # return 2 lists: relation olus; subject olus
 
     spcf_idx = {"final":0, "true": 2, "plus": 4}[spcf_type]
@@ -59,8 +57,6 @@ def olu_lists(r_list, olu_type, spcf_type, efficacy_type, min_size=0, return_all
 
     for res_idx in range(len(local_results_list)):
         r_name = neighborhood[res_idx][0]
-        if r_name not in r_list:
-            continue
         results_dict = local_results_list[res_idx]
         if results_dict==None:
             continue
@@ -117,14 +113,14 @@ def olu_lists(r_list, olu_type, spcf_type, efficacy_type, min_size=0, return_all
     return olus_relations_list, olus_subjects_list
 
 
-def print_statistics(r_list, min_size=0):
+def print_statistics(min_size=0):
     # "product"
     for olu_type in ["harmonic"]:
         for spcf_type in ["plus"]:
             for efficacy_type in ["prob"]:
                 if [spcf_type, efficacy_type].count("final")==1:
                     continue
-                olus_relations_list, olus_subjects_list = olu_lists(r_list, olu_type, spcf_type, efficacy_type, min_size)
+                olus_relations_list, olus_subjects_list = olu_lists(olu_type, spcf_type, efficacy_type, min_size)
                 print(f"\nOLU type = {olu_type}\nEfficacy type = {efficacy_type}\nSpecificity type = {spcf_type}")
 
                 count_by_relations = []
@@ -134,23 +130,30 @@ def print_statistics(r_list, min_size=0):
                     count_by_relations.append(olus_relations_list.count(layer))
                     count_by_subjects.append(olus_subjects_list.count(layer))
 
+                n_subjects = sum(count_by_subjects)
+
                 spcf_name = "prob" if spcf_type=="true" else spcf_type
                 file_name_prompt = f"OLU histogram by prompts, {olu_type}, {efficacy_type}, {spcf_name}.png"
-                title_prompt = f"OLU histogram of prompts\nn = {sum(count_by_subjects)}"
+                title_prompt = f"OLU histogram of prompts\nn = {n_subjects}"
 
                 common_ixd = np.argmax(count_by_subjects)
                 common_value = LAYERS_RANGE[common_ixd]
 
-                frac = count_by_subjects[common_ixd] / sum(count_by_subjects)
+                frac = count_by_subjects[common_ixd] / n_subjects
                 print(f"common OLU by prompts = {common_value}\t({frac*100}%)")
+
+                count_by_subjects = [n*100/n_subjects for n in count_by_subjects]
 
                 plt.plot(LAYERS_RANGE, count_by_subjects)
                 plt.title(title_prompt)
+                plt.grid()
+                plt.xlabel("layer")
+                plt.ylabel("%")
                 plt.savefig(file_name_prompt)
                 plt.clf()
 
                 file_name_relation = f"OLU histogram by relations, {olu_type}, {efficacy_type}, {spcf_name}.png"
-                title_relation = f"OLU histogram by relations\nn = {len(count_by_relations)}"
+                title_relation = f"OLU histogram by relations\nn = {sum(count_by_relations)}"
 
                 common_ixd = np.argmax(count_by_relations)
                 common_value = LAYERS_RANGE[common_ixd]
@@ -158,8 +161,13 @@ def print_statistics(r_list, min_size=0):
                 frac = count_by_subjects[common_ixd] / sum(count_by_subjects)
                 print(f"common OLU by relations = {common_value} \t({round(frac * 100)}%)")
 
+                count_by_relations = [n * 100 / sum(count_by_relations) for n in count_by_relations]
+
                 plt.plot(LAYERS_RANGE, count_by_relations)
                 plt.title(title_relation)
+                plt.grid()
+                plt.xlabel("layer")
+                plt.ylabel("%")
                 plt.savefig(file_name_relation)
                 plt.clf()
 
@@ -173,41 +181,6 @@ def histogram_of_max_lists(lists, norm=True):
         s = sum(hist)
         hist = [v/s for v in hist]
     return hist
-
-
-def relations_histograms(r_list, norm=True, cross_editing = False):
-    for olu_type in ["harmonic"]:
-        for spcf_type in ["final", "true", "plus"]:
-            for efficacy_type in ["final", "prob"]:
-                if [spcf_type, efficacy_type].count("final")==1:
-                    continue
-                all_scores = olu_lists(r_list, olu_type, spcf_type, efficacy_type, min_size=0, return_all_scores=True, cross_editing=cross_editing)
-                print(f"\nOLU type = {olu_type}\nEfficacy type = {efficacy_type}\nSpecificity type = {spcf_type}")
-
-                max_len = max([len(v) for v in all_scores.values()])
-                all_hist = []
-                all_scores_subjects = []
-                for rel in all_scores.keys():
-                    rel_hist = histogram_of_max_lists(all_scores[rel], norm)
-                    alpha = len(all_scores[rel])/max_len
-                    plt.plot(LAYERS_RANGE, rel_hist, "blue", alpha=alpha)
-                    all_hist.append(rel_hist)
-                    all_scores_subjects+=all_scores[rel]
-                mean_hist_rel = average_lists(all_hist)
-                # mean_scores = average_lists(all_scores_subjects)
-
-                plt.plot(LAYERS_RANGE, mean_hist_rel, "black", label="mean histogram")
-                plt.legend()
-                plt.grid()
-
-                spcf_name = "prob" if spcf_type == "true" else spcf_type
-                title = f"OLU histogram of prompts by relations, {efficacy_type}, {spcf_name}"
-
-                plt.title(title)
-                if cross_editing:
-                    title+=" cross editing"
-                plt.savefig(title+".png")
-                plt.clf()
 
 
 def average(l):
@@ -229,7 +202,7 @@ def harmonic_mean_list(list1, list2):
     return new_list
 
 
-def print_success_by_relations(relation_set=[], success_type="harmonic", specifisity_name="prob", by_probs=True, size_limit=None, holdon = False):
+def print_success_by_relations(success_type="harmonic", specifisity_name="plus", by_probs=True, transparency=True, holdon = False, colour = "black"):
     # specifisity types:
     # 0: "finals"
     # 2: "prob"
@@ -240,11 +213,8 @@ def print_success_by_relations(relation_set=[], success_type="harmonic", specifi
     to_flip = int(specifisity_type in [0, 3])
 
     to_print = [i for i in range(len(RESULTS_LIST)) if RESULTS_LIST[i] is not None]
-    if len(relation_set) > 0:
-        to_print = [i for i in to_print if i in relation_set]
-    if size_limit:
-        to_print = [i for i in to_print if len(neighborhood[i][1]) <= size_limit]
 
+    # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 9))
     relations_list = [nghbr[0] for nghbr in neighborhood]
     if [] in relations_list:
         relations_list.remove([])
@@ -273,48 +243,70 @@ def print_success_by_relations(relation_set=[], success_type="harmonic", specifi
             results_by_relation[relation_idx].append(new_result_list)
             results_all.append(new_result_list)
 
-    mean_results_by_relations = []
-    for i in range(len(results_by_relation)):
-        rel_results = results_by_relation[i]
-        if len(rel_results)==0:
-            continue
-
-        average_results = average_lists(rel_results)
-        mean_results_by_relations.append(average_results)
+    lengths = [len(l) for l in results_by_relation]
+    max_list = max(lengths)
+    argmax_list = lengths.index(max_list)
 
     mean_over_prompts = average_lists(results_all)
 
     success_name = {"harmonic": "Harmonic Mean", "spcf": "Specificity", "eff": "Efficacy"}[success_type]
 
     if holdon:
-        plt.plot(LAYERS_RANGE, mean_over_prompts, label=success_name)
+        plt.plot(LAYERS_RANGE, mean_over_prompts, colour, label=success_name)
+        return
 
-    else:
-        plt.plot(LAYERS_RANGE, mean_over_prompts, "black", label="average over prompts")
-        plt.legend()
+    mean_results_by_relations = []
+    for i in range(len(results_by_relation)):
+        rel_results = results_by_relation[i]
+        if len(rel_results)==0:
+            continue
 
-        t = 'probs' if by_probs else 'finals'
+        if transparency:
+            alpha = len(rel_results)/max_list
+            color_name = "blue"
+        else:
+            alpha=1
+            color_idx = i % len(colors)
+            color_name = colors[color_idx]
 
-        plt.title(success_name)
-        plt.grid()
+        average_results = average_lists(rel_results)
+        mean_results_by_relations.append(average_results)
 
-        filename = "success_by_layers_"
+        label = "average for a single relation" if i==argmax_list else None
+        plt.plot(LAYERS_RANGE, average_results, color_name, alpha=alpha, label=label)
 
-        filename += f"{t}_{specifisity_name}.png"
-        plt.savefig(filename)
-        plt.clf()
+    plt.plot(LAYERS_RANGE, mean_over_prompts, "red", label="average over all prompts", linewidth=2.5)
+    plt.legend()
+
+    max_idx_p = np.argmax(mean_over_prompts)
+    max_layer_p = LAYERS_RANGE[max_idx_p]
+
+    print(f"mean OLU: by prompts = {max_layer_p}")
+
+    t = 'probs' if by_probs else 'finals'
+    title = {"harmonic": "Harmonic Mean", "spcf": "Specificity", "eff": "Efficacy"}[success_type]
+    plt.title(title)
+    plt.grid()
+    filename = "success_by_layers_"
+
+    filename += f"{t}_{specifisity_name}.png"
+    plt.savefig(filename)
+    plt.clf()
 
 
-def print_success_multi_types(relation_set=[], success_types=["eff", "spcf"], specifisity_name="prob", by_probs=True, size_limit=None):
-
+def print_success_multi_types(success_types=["eff", "spcf"], specifisity_name="plus", by_probs=True):
     title = ""
-    for success_type in success_types:
-        print_success_by_relations(relation_set=relation_set, success_type=success_type, specifisity_name=specifisity_name, by_probs=by_probs,
-                               size_limit=size_limit, holdon=True)
-        success_name = {"harmonic": "Harmonic Mean", "spcf": "Specificity", "eff": "Efficacy"}[success_type]
-        title+=success_name+"_"
+    colors = ["green", "orange"]
 
-    title=title[:-1]
+    for i in range(len(success_types)):
+        success_type = success_types[i]
+        print_success_by_relations(success_type=success_type, specifisity_name=specifisity_name, by_probs=by_probs, holdon=True, colour = colors[i])
+        success_name = {"harmonic": "Harmonic Mean", "spcf": "Specificity", "eff": "Efficacy"}[success_type]
+        title+=success_name+", "
+
+    plt.xlabel("layer")
+    plt.ylabel("score")
+    title=title[:-2]
     plt.legend()
 
     t = 'probs' if by_probs else 'finals'
@@ -339,23 +331,17 @@ def average_lists(lists, final_avrg = False, by_rows = False, dont_change = Fals
         return [sum([l[i] for l in lists])/len(lists) for i in range(len(lists[0]))]
 
 
-def avrg_olu_exp_dict(olu_exp_dict, key, efficacy_probs, efficacy_flag):
-    all_scores = olu_exp_dict["efficacy_scores"] if efficacy_flag else olu_exp_dict["neighborhood_scores"]
-    print("all_scores len:", len(all_scores))
-    n_subjects = len(all_scores[0])
-    if efficacy_flag:
-        key_idx = int(efficacy_probs)
-    else:
-        key_idx = {"final": 0, "new": 1, "true": 2, "plus": 4}[key]
-    scores = all_scores[key_idx]  # size: n_subjects
-    olu_sum = sum(scores)
-    return olu_sum, n_subjects
+########
+# RUNS #
+########
 
+## Histograms:
+print_statistics()
 
-# functions:
-relations_histograms(train_set, cross_editing=False)
-print_statistics(train_set+test_set, min_size=0)
-print_success_by_relations(relation_set=range(125), success_type = "spcf", specifisity_name="plus", by_probs=True, size_limit=None)
-print_success_multi_types(relation_set=range(125), success_types=["eff", "spcf"], specifisity_name="plus", by_probs=True, size_limit=None)
-# specifisity types: "finals"; "prob"; "plus"
-# success_type: "harmonic"; "spcf"; "eff"
+## Average score throughout the layers:
+print_success_by_relations("spcf")
+
+## Average score of multi-metrics throughout the layers:
+print_success_multi_types(success_types=["eff", "spcf"])
+    # specifisity types: "finals"; "prob"; "plus"
+    # success_type: "harmonic"; "spcf"; "eff"
