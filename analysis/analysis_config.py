@@ -1,13 +1,20 @@
+import matplotlib.pyplot as plt
+
 NUM_OF_LAYERS = 48
 HIGH_RES_LAYERS_RANGE = range(0, NUM_OF_LAYERS)
 
-train_set = ['The native language of {} is', 'In {}, an official language is', 'Where is {}? It is located in', '{} is headquartered in', '{} is to debut on', '{} holds a citizenship from', '{} is a product of', "{}'s capital is", '{}, who has a citizenship from', '{} was originally from', '{} is the capital city of', '{} was created by', '{}, a product manufactured by', '{} was developed in', 'The capital of {} is', '{}, founded in', 'In {}, the language spoken is', "{}'s headquarters are in", '{} passed away in', '{}, which is located in', '{} is in', '{} is a twin city of', '{} debuted on', '{}, a citizen of', 'The mother tongue of {} is', '{} can be found in', 'What sport does {} play? They play', '{} is based in', '{}, located in', '{}, developed by', '{}, produced by', '{} is a native speaker of', '{} was originally aired on', '{} is developed by', '{}, that originated in', '{}, which has the capital', '{}, who is employed by', '{} is located in the country of', 'The capital city of {} is', '{}, a product developed by', 'The headquarter of {} is located in', '{} is affiliated with the', '{}, whose headquarters are in', '{}, a product created by', '{}, created by', '{} is originally from', '{} is a part of the continent of', '{} is produced by', '{} has a citizenship from', '{} was born in', '{} is owned by', '{} is created by', '{} originated in', 'The official religion of {} is', '{} is a professional', '{}, a product of']
-train_sets = [[train_set[i] for i in range(len(train_set)) if i%4==j] for j in range(4)]
+DEFAULT_OLU = {"finals": 4,
+			   "probs": 8,
+			   "plus": 4}
 
-test_set = ["{}'s capital,", '{} died in the city of', '{} is native to', '{} belongs to the continent of', 'The official language of {} is', '{} works in the field of', '{}, who is a citizen of', '{}, who holds a citizenship from', '{} was a product of', '{}, in', '{} plays in the position of', "{}'s capital city,", '{} premiered on', '{} is located in', '{} worked in the city of', '{} premieres on', '{} was developed by', '{} was native to', '{} is a citizen of']
-# 17, 18, 30, 31, 32, 33, 34, 35, 45, 46, 47, 48, 49, 52, 63, 64, 66, 68, 70, 75, 76, 79, 80, 86, 87, 88, 89, 93, 94, 95, 96, 128, 129, 130, 131,
+colors = ['aqua', 'aquamarine', 'black', 'blanchedalmond', 'blue', 'blueviolet', 'brown', 'burlywood', 'cadetblue', 'chartreuse', 'chocolate', 'coral', 'cornflowerblue', 'crimson', 'cyan', 'darkblue', 'darkcyan', 'darkgoldenrod', 'darkgray', 'darkgreen', 'darkgrey', 'darkkhaki', 'darkmagenta', 'darkolivegreen', 'darkorange', 'darkorchid', 'darkred', 'darksalmon', 'darkseagreen', 'darkslateblue', 'darkslategray', 'darkslategrey', 'darkturquoise', 'darkviolet', 'deeppink', 'deepskyblue', 'dimgray', 'dimgrey', 'dodgerblue', 'firebrick', 'forestgreen', 'fuchsia', 'gainsboro', 'ghostwhite', 'gold', 'goldenrod', 'gray', 'green', 'greenyellow', 'grey', 'hotpink', 'indianred', 'indigo', 'khaki', 'lavenderblush', 'lawngreen', 'lemonchiffon', 'lightblue', 'lightcoral', 'lightgray', 'lightgreen', 'lightgrey', 'lightpink', 'lightsalmon', 'lightseagreen', 'lightskyblue', 'lightslategray', 'lightslategrey', 'lightsteelblue', 'lime', 'limegreen', 'linen', 'magenta', 'maroon', 'mediumaquamarine', 'mediumblue', 'mediumorchid', 'mediumpurple', 'mediumseagreen', 'mediumslateblue', 'mediumspringgreen', 'mediumturquoise', 'mediumvioletred', 'midnightblue', 'mistyrose', 'moccasin', 'navajowhite', 'navy', 'oldlace', 'olive', 'olivedrab', 'orange', 'orangered', 'orchid', 'palegoldenrod', 'palegreen', 'paleturquoise', 'palevioletred', 'papayawhip', 'peachpuff', 'peru', 'pink', 'plum', 'powderblue', 'purple', 'rebeccapurple', 'red', 'rosybrown', 'royalblue', 'saddlebrown', 'salmon', 'sandybrown', 'seagreen', 'seashell', 'sienna', 'silver', 'skyblue', 'slateblue', 'slategray', 'slategrey', 'springgreen', 'steelblue', 'tan', 'teal', 'thistle', 'tomato', 'turquoise', 'violet', 'wheat', 'yellow', 'yellowgreen']
 
-SET_NAMES = {"all": train_set + test_set, "train": train_set, "train0": train_sets[0], "train1": train_sets[1], "train2": train_sets[2], "train3": train_sets[3], "test": test_set}
+
+neighboring_by_probs = True
+neighboring_by_true_probs = True
+neighboring_by_finals = True
+neighboring_by_plus = True
+
 
 class nan:
 	pass
@@ -15,7 +22,7 @@ class nan:
 class inf:
 	pass
 
-# fixing bad values obtained from division by 0
+
 def change_to_none(X, print_count = True):
 	count = 0
 	for i in range(len(X)):
@@ -32,11 +39,36 @@ def change_to_none(X, print_count = True):
 	return count
 
 
-# settings for FLS, OLU, probs analysis:
+def merge_res_dict(dict_low, dict_high):
+	new_dict = {'neighborhood_scores': [], 'efficacy_scores': []}
+	new_dict['neighborhood_scores'] += dict_low['neighborhood_scores']
+	new_dict['neighborhood_scores'] += dict_high['neighborhood_scores']
+	new_dict['efficacy_scores'] += dict_low['efficacy_scores']
+	new_dict['efficacy_scores'] += dict_high['efficacy_scores']
+	return new_dict
+
+
+SMALL_SIZE = 14
+MEDIUM_SIZE = 16
+BIGGER_SIZE = 18
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 k = "prob"    # int or str from ["prob", "ratio prob", "increase v", "increase l"]
 min_n = 5
 n_values = 30   # number of values to discreet continuous values (prob, ratio prob)
-r_set = train_set+test_set
 p_threshold = 0.0
 
+def print_list(list_input, file_name=None):
+  file = open(file_name, "w", encoding="utf-8")
+  file.write("d = [\n")
+  for item in list_input:
+    file.write(f"\t{item},\n")
+  file.write("]")
+  file.close()
