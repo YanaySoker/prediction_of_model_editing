@@ -1025,15 +1025,15 @@ def scores_as_a_function_of_fls(k, layer_type, min_n=0, n_values=30):
 ########
 
 ## Percentage of low success (score < threshold) as a function of FLS or final probability (depending on k)
-percentage_of_low_success(k, "1 diff", "harmonic", threshold_range=[0.05, 0.1], spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
+percentage_of_low_success(k, "4 diff", "harmonic", threshold_range=[0.05, 0.1], spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
 
 ## percentage of:
 ## if threshold_layer is int: OLU < threshold_layer
 ## if threshold_layer is [int1, int2]: sore[int1] < score[int2]
-percentage_of_OLU_lower_than(1, "harmonic", threshold_layer=[0, 20], spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
+percentage_of_OLU_lower_than(1, "harmonic", threshold_layer=[4, 30], spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
 
 ## score (harmonic mean, efficacy, specificity) as a function of FLS or final probability (depending on k)
-scores_as_a_function_of_fls("prob", 1, min_n, n_values)
+scores_as_a_function_of_fls("prob", 4, min_n, n_values)
 
 ## OLU as a function of FLS or final probability (depending on k)
 fls_olu(olu_type="harmonic", k=k, show_dots=False, n_values_to_discreet=n_values, common=False, real_spcf=False)
