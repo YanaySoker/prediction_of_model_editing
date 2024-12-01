@@ -216,7 +216,7 @@ def fls_prob(k, ration_flag=False, min_n=0, mlp_flag = False):
     ratio_addition = " [ratio]" if ration_flag else ""
 
     title = f"Final prob{ratio_addition} as a Function of FLS\nk = {k}, n = {len(X)}, r = {r}"
-    plt.title(title, fontsize=10)
+    plt.title(title)
     filename = f"Final prob{ratio_addition} as a Function of FLS; {k}"
     plt.savefig(filename)
     plt.clf()
@@ -361,7 +361,7 @@ def fls_olu(olu_type, k, contin_flag=False, efficacy_probs=True, plot=True,
     else:
             r = np.corrcoef(x, y[spcf_key])[0][1]
 
-    plt.xlabel("FLS") if type(k) == "int" else plt.xlabel("final probability")
+    plt.xlabel("FLS") if type(k) == int else plt.xlabel("final probability")
     plt.ylabel("OLU")
     if show_dots:
             plt.plot(x, y[spcf_key], "green", marker="o", linestyle="None", alpha=0.2)
@@ -373,7 +373,7 @@ def fls_olu(olu_type, k, contin_flag=False, efficacy_probs=True, plot=True,
     eff_ind = "prob" if efficacy_probs else "final"
 
     title = f"OLU as a Function of FLS\nk: {k}, n = {n}, r = {str(r)[:4]}"
-    plt.title(title, fontsize=10)
+    plt.title(title)
     filename = f"OLU as a Function of FLS; {spcf_key}; {eff_ind}; {k}"
     plt.savefig(filename)
     plt.clf()
@@ -435,7 +435,7 @@ def fls_co_olu(olu_type, k, contin_flag=False, parameter=1, efficacy_probs=True,
         eff_ind = "prob" if efficacy_probs else "final"
 
         title = f"co-OLU as a Function of FLS\nspcf: {key}; eff: {eff_ind}; k: {k}\nn = {len(x)}, r = {r}"
-        plt.title(title, fontsize=10)
+        plt.title(title)
         filename = f"co-OLU as a Function of FLS; {key}; {eff_ind}; {k}"
         plt.savefig(filename)
         plt.clf()
@@ -786,7 +786,7 @@ def percentage_of_low_success(k, layer_type, success_type, parameter=1, threshol
 
         ax.legend()
         ax.grid()
-        plt.xlabel("FLS") if type(k) == "int" else plt.xlabel("final probability")
+        plt.xlabel("FLS") if type(k) == int else plt.xlabel("final probability")
         plt.ylabel("%")
 
         current_title = title
@@ -837,7 +837,7 @@ def percentage_of_OLU_lower_than(k, success_type, threshold_layer = 15, efficacy
             filename = f"percentage of OLU lower than {threshold_layer}; {success_type}; {key}"
             title = f"Percentage of OLU lower than {threshold_layer}\nk = {k}, r = {str(r)[:4]}"
         plt.plot(temp_x, temp_y, marker="o", linestyle="None")
-        plt.xlabel("FLS") if type(k) == "int" else plt.xlabel("final probability")
+        plt.xlabel("FLS") if type(k) == int else plt.xlabel("final probability")
         plt.ylabel("%")
         plt.grid()
 
@@ -987,7 +987,7 @@ def fls_extremum_spcf(k, min_n=0, show_dots = True,
 
          if show_dots:
                  plt.plot(x, y, "green", marker="o", linestyle="None", alpha=0.2)
-                 plt.xlabel("FLS") if type(k) == "int" else plt.xlabel("final probability")
+                 plt.xlabel("FLS") if type(k) == int else plt.xlabel("final probability")
                  plt.ylabel("OLU")
                  plt.plot(new_x, new_y)
          else:
@@ -995,14 +995,13 @@ def fls_extremum_spcf(k, min_n=0, show_dots = True,
          plt.grid()
 
          title = f"{graph['name']} as a Function of FLS\nk: {k}, n = {n}, r = {str(r)[:4]}"
-         plt.title(title, fontsize=10)
+         plt.title(title)
          filename = f"{graph['name']} as a Function of FLS; {spcf_key}; {k}"
          plt.savefig(filename)
          plt.clf()
 
 
 def scores_as_a_function_of_fls(k, layer_type, min_n=0, n_values=30):
-    plt.figure(figsize=(10, 7.5))
     for success_type in ["harmonic", "spcf", "eff"]:
         n = success_as_a_function_of_fls(k, layer_type, success_type, parameter=1, efficacy_prob=True,
                                          contin_flag=False, print_flag=True, dots_flag=False, min_n=min_n,
@@ -1026,15 +1025,15 @@ def scores_as_a_function_of_fls(k, layer_type, min_n=0, n_values=30):
 ########
 
 ## Percentage of low success (score < threshold) as a function of FLS or final probability (depending on k)
-percentage_of_low_success(k, 4, "harmonic", threshold_range=[0.9], spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
+percentage_of_low_success(k, "1 diff", "harmonic", threshold_range=[0.05, 0.1], spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
 
 ## percentage of:
 ## if threshold_layer is int: OLU < threshold_layer
 ## if threshold_layer is [int1, int2]: sore[int1] < score[int2]
-percentage_of_OLU_lower_than(k, "harmonic", threshold_layer=[1,23], spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
+percentage_of_OLU_lower_than(1, "harmonic", threshold_layer=[0, 20], spcf_types=["probs plus"], min_n=min_n, n_values=n_values)
 
 ## score (harmonic mean, efficacy, specificity) as a function of FLS or final probability (depending on k)
-scores_as_a_function_of_fls(k, 1, min_n, n_values)
+scores_as_a_function_of_fls("prob", 1, min_n, n_values)
 
 ## OLU as a function of FLS or final probability (depending on k)
 fls_olu(olu_type="harmonic", k=k, show_dots=False, n_values_to_discreet=n_values, common=False, real_spcf=False)
