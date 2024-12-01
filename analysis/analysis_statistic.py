@@ -339,7 +339,7 @@ def average_lists(lists, final_avrg = False, by_rows = False, dont_change = Fals
 print_statistics()
 
 ## Average score throughout the layers:
-print_success_by_relations("spcf")
+print_success_by_relations("harmonic")
 
 ## Average score of multi-metrics throughout the layers:
 print_success_multi_types(success_types=["eff", "spcf"])
