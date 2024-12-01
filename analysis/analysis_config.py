@@ -60,7 +60,7 @@ plt.rc('ytick', labelsize=MEDIUM_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=MEDIUM_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-k = "prob"    # int or str from ["prob", "ratio prob", "increase v", "increase l"]
+k = 1    # int or str from ["prob", "ratio prob", "increase v", "increase l"]
 min_n = 5
 n_values = 30   # number of values to discreet continuous values (prob, ratio prob)
 p_threshold = 0.0
