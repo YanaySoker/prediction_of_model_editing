@@ -931,10 +931,10 @@ def std(l):
 
 def fls_extremum_spcf(k, min_n=0, show_dots = True,
             correlation_by_average=True, n_values_to_discreet=None, min_v = 0, max_v = NUM_OF_LAYERS,
-            spcf_key="probs plus", p_threshold=0, succes_instead_of_spcf=False):
+            spcf_key="probs plus", p_threshold=0, success_instead_of_spcf=False):
 
     argmin_spcf_g = {"x": [], "y": [], "name": "Argmin Specificity"}
-    argmax_name = "Argmax Real Success" if succes_instead_of_spcf else "Argmax Real Specificity"
+    argmax_name = "Argmax Real Success" if success_instead_of_spcf else "Argmax Real Specificity"
     argmax_real_spcf_g = {"x": [], "y": [], "name": argmax_name}
     min_spcf_g = {"x": [], "y": [], "name": "Min Specificity"}
 
@@ -942,7 +942,7 @@ def fls_extremum_spcf(k, min_n=0, show_dots = True,
 
     argmin_dict = get_success("argmin", "spcf", parameter=1, efficacy_prob=True, range_bound=None)
     argmin_spcf = argmin_dict[spcf_key]
-    if succes_instead_of_spcf:
+    if success_instead_of_spcf:
         argmax_real_dict = get_success("argmax", "harmonic", parameter=1, efficacy_prob=True, range_bound=argmin_spcf)
     else:
         argmax_real_dict = get_success("argmax", "spcf", parameter=1, efficacy_prob=True, range_bound=argmin_spcf)
@@ -1042,4 +1042,4 @@ fls_olu(olu_type="harmonic", k=k, show_dots=False, n_values_to_discreet=n_values
 fls_co_olu("harmonic", k, min_n=min_n, n_values_to_discreet=n_values)
 
 ## Extremum of spcf as a function of FLS
-fls_extremum_spcf("prob", min_n=min_n, show_dots=False, correlation_by_average=True, n_values_to_discreet=n_values, spcf_key="probs plus", succes_instead_of_spcf=False)
+fls_extremum_spcf("prob", min_n=min_n, show_dots=False, correlation_by_average=True, n_values_to_discreet=n_values, spcf_key="probs plus", success_instead_of_spcf=False)
