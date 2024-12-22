@@ -237,9 +237,9 @@ def print_success_by_relations(success_type="harmonic", specifisity_name="plus",
             count += 1
             specifisity = [(spcf_scores[L][specifisity_type][subj_idx] - to_flip) * (-1) ** to_flip for L in
                            range(len(LAYERS_RANGE))]
-            efficasy = [eff_scores[L][eff_type][subj_idx] for L in range(len(LAYERS_RANGE))]
+            efficacy = [eff_scores[L][eff_type][subj_idx] for L in range(len(LAYERS_RANGE))]
 
-            new_result_list = {"harmonic": harmonic_mean_list(specifisity, efficasy), "spcf": specifisity, "eff": efficasy}[success_type]
+            new_result_list = {"harmonic": harmonic_mean_list(specifisity, efficacy), "spcf": specifisity, "eff": efficacy}[success_type]
             results_by_relation[relation_idx].append(new_result_list)
             results_all.append(new_result_list)
 
